@@ -1,7 +1,7 @@
 // ── UI ATOMS ──────────────────────────────────────────────
 // Shared across all components. Keep stateless.
 import { useState } from 'react'
-import { t, CLASS_COLORS, DT_COLORS } from '../../lib/theme.js'
+import { t, CLASS_COLORS, DT_COLORS } from '../lib/theme.js'
 
 // ── Primitives ────────────────────────────────────────────
 
@@ -85,11 +85,27 @@ export const ClassBadge = ({ cls, pi }) => {
   const color = CLASS_COLORS[cls] ?? t.dim
   return (
     <span style={{
-      background: `${color}20`, border: `1px solid ${color}55`,
-      borderRadius: 3, padding: '2px 8px', fontSize: 12, fontFamily: t.mono,
-      color, fontWeight: 700, letterSpacing: '0.04em',
+      display: 'inline-flex', alignItems: 'stretch',
+      borderRadius: 3, overflow: 'hidden', fontSize: 12,
+      fontFamily: t.mono, fontWeight: 700, letterSpacing: '0.04em',
+      flexShrink: 0,
     }}>
-      {cls}{pi ? ` ${pi}` : ''}
+      {/* Class letter — colored bg */}
+      <span style={{
+        background: color, color: '#000',
+        padding: '2px 7px', lineHeight: 1.6,
+      }}>
+        {cls}
+      </span>
+      {/* PI number — black bg */}
+      {pi != null && (
+        <span style={{
+          background: '#000', color: '#fff',
+          padding: '2px 7px', lineHeight: 1.6,
+        }}>
+          {pi}
+        </span>
+      )}
     </span>
   )
 }

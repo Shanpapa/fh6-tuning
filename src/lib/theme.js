@@ -21,11 +21,16 @@ export const t = {
   mono:     "'Space Mono', monospace",
 }
 
-// Class badge colors
+// Class badge colors — FH6 in-game exact
 export const CLASS_COLORS = {
-  D: '#71717a', C: '#4ade80', B: '#38bdf8',
-  A: '#f97316', S1: '#a78bfa', S2: '#f87171',
-  R: '#fbbf24', X: '#ffffff',
+  D:  '#38bdf8', // light blue
+  C:  '#f59e0b', // amber
+  B:  '#f97316', // orange
+  A:  '#ef4444', // red
+  S1: '#a855f7', // purple
+  S2: '#3b82f6', // blue
+  R:  '#ec4899', // pink/magenta
+  X:  '#22c55e', // bright green
 }
 
 // Drivetrain colors
