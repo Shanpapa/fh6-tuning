@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase.js'
 import { t } from '../../lib/theme.js'
 import { GOALS, classFromPi } from '../../lib/constants.js'
 import { Btn, Row, Modal, ClassBadge, SectionHead, Spinner, HR } from '../UI/index.jsx'
+import UpgradesTab from './UpgradesTab.jsx'
 
 // ── Goal badge ─────────────────────────────────────────────
 const GOAL_COLORS = {
@@ -43,6 +44,7 @@ function NewBuildModal({ userCarId, onClose, onCreated }) {
       goal,
       target_class: derivedClass ?? null,
       target_pi:    pi ? parseInt(pi) : null,
+      installed_parts: [],
     })
     if (error) { setErr(error.message); setLoading(false); return }
     onCreated()
@@ -235,22 +237,32 @@ function BuildsList({ userCar, onBack, onSelectBuild }) {
   )
 }
 
-// ── Build edit (placeholder) ───────────────────────────────
+// ── Build edit ─────────────────────────────────────────────
 function BuildEdit({ build, userCar, onBack }) {
   const car = userCar?.car
+  const [tab, setTab] = useState('upgrades')
+
+  const TABS = [
+    { id: 'upgrades', label: 'Upgrades' },
+    { id: 'tune',     label: 'Tune'     },
+  ]
+
   return (
-    <div style={{ padding: '20px 24px', maxWidth: 900, margin: '0 auto' }}>
+    <div style={{ padding: '20px 24px', maxWidth: 1100, margin: '0 auto' }}>
+      {/* Back */}
       <button
         onClick={onBack}
         style={{
           background: 'none', border: 'none', color: t.dim, fontFamily: t.mono,
-          fontSize: 11, cursor: 'pointer', marginBottom: 20, padding: 0,
+          fontSize: 11, cursor: 'pointer', marginBottom: 16, padding: 0,
           textTransform: 'uppercase', letterSpacing: '0.08em',
         }}
       >← {car?.make} {car?.model}</button>
-      <div style={{ marginBottom: 24 }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
         <div style={{
-          fontFamily: t.head, fontSize: 26, fontWeight: 800,
+          fontFamily: t.head, fontSize: 24, fontWeight: 800,
           textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8,
         }}>
           {build.name}
@@ -260,12 +272,40 @@ function BuildEdit({ build, userCar, onBack }) {
           {build.target_class && <ClassBadge cls={build.target_class} pi={build.target_pi} />}
         </div>
       </div>
+
+      {/* Tabs */}
       <div style={{
-        background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8,
-        padding: 32, textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13,
+        display: 'flex', gap: 2, borderBottom: `1px solid ${t.border}`, marginBottom: 20,
       }}>
-        Upgrades → Baseline Tune → Diagnostic — coming next
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id} onClick={() => setTab(id)}
+            style={{
+              background: 'none', border: 'none', padding: '8px 16px',
+              fontFamily: t.mono, fontSize: 11, fontWeight: 700,
+              textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer',
+              color: tab === id ? t.accent : t.dim,
+              borderBottom: tab === id ? `2px solid ${t.accent}` : '2px solid transparent',
+              marginBottom: -1,
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+
+      {/* Tab content */}
+      {tab === 'upgrades' && (
+        <UpgradesTab build={build} car={car} />
+      )}
+      {tab === 'tune' && (
+        <div style={{
+          background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8,
+          padding: 32, textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13,
+        }}>
+          Tune tab — coming next
+        </div>
+      )}
     </div>
   )
 }
