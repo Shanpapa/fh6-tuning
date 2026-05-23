@@ -5,6 +5,7 @@ import { GOALS, classFromPi } from '../../lib/constants.js'
 import { Btn, Row, Modal, ClassBadge, SectionHead, Spinner, HR } from '../UI/index.jsx'
 import UpgradesTab from './UpgradesTab.jsx'
 import TuneTab from './TuneTab.jsx'
+import NotesTab from './NotesTab.jsx'
 
 // ── Goal badge ─────────────────────────────────────────────
 const GOAL_COLORS = {
@@ -250,7 +251,7 @@ function BuildsList({ userCar, onBack, onSelectBuild }) {
 }
 
 // ── Build edit ─────────────────────────────────────────────
-function BuildEdit({ build, userCar, onBack }) {
+function BuildEdit({ build, userCar, onBack, onTabChange }) {
   const car = userCar?.car
   const [tab,            setTab]           = useState('upgrades')
   const [installedParts, setInstalledParts] = useState([])
@@ -267,6 +268,7 @@ function BuildEdit({ build, userCar, onBack }) {
   const TABS = [
     { id: 'upgrades', label: 'Upgrades' },
     { id: 'tune',     label: 'Tune'     },
+    { id: 'notes',    label: 'Notes'    },
   ]
 
   return (
@@ -307,7 +309,7 @@ function BuildEdit({ build, userCar, onBack }) {
       }}>
         {TABS.map(({ id, label }) => (
           <button
-            key={id} onClick={() => setTab(id)}
+            key={id} onClick={() => { setTab(id); onTabChange?.(id) }}
             style={{
               background: 'none', border: 'none', padding: '8px 16px',
               fontFamily: t.mono, fontSize: 11, fontWeight: 700,
@@ -322,6 +324,9 @@ function BuildEdit({ build, userCar, onBack }) {
         ))}
       </div>
 
+      {tab === 'notes' && (
+        <NotesTab build={build} />
+      )}
       {tab === 'upgrades' && (
         <UpgradesTab
           build={build} car={car}
@@ -340,11 +345,11 @@ function BuildEdit({ build, userCar, onBack }) {
 }
 
 // ── Main export ────────────────────────────────────────────
-export default function BuildEditor({ userCar, onBack }) {
+export default function BuildEditor({ userCar, onBack, onTabChange }) {
   const [selectedBuild, setSelectedBuild] = useState(null)
 
   if (selectedBuild) return (
-    <BuildEdit build={selectedBuild} userCar={userCar} onBack={() => setSelectedBuild(null)} />
+    <BuildEdit build={selectedBuild} userCar={userCar} onBack={() => { setSelectedBuild(null); onTabChange?.(null) }} onTabChange={onTabChange} />
   )
 
   return (

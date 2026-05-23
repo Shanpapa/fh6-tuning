@@ -6,9 +6,10 @@ import Login from './components/Auth/Login.jsx'
 import Garage from './components/Garage/index.jsx'
 import BuildEditor from './components/BuildEditor/index.jsx'
 import Diagnostic from './components/Diagnostic/index.jsx'
+import Profile from './components/Profile/index.jsx'
 
-// ── Leave build confirm modal ─────────────────────────────
-function LeaveModal({ onLeave, onCancel }) {
+// ── Confirm modal (generic) ───────────────────────────────
+function ConfirmModal({ title, message, confirmLabel, confirmVariant = 'danger', onConfirm, onCancel }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
@@ -23,14 +24,14 @@ function LeaveModal({ onLeave, onCancel }) {
           textTransform: 'uppercase', letterSpacing: '0.06em',
           color: t.text, marginBottom: 10,
         }}>
-          Leave build?
+          {title}
         </div>
         <div style={{ fontSize: 13, fontFamily: t.mono, color: t.mid, marginBottom: 24, lineHeight: 1.6 }}>
-          Any unsaved changes to your upgrades or tune will be lost.
+          {message}
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <Btn variant="ghost" onClick={onCancel}>Stay</Btn>
-          <Btn variant="danger" onClick={onLeave}>Leave without saving</Btn>
+          <Btn variant="ghost" onClick={onCancel}>Cancel</Btn>
+          <Btn variant={confirmVariant} onClick={onConfirm}>{confirmLabel}</Btn>
         </div>
       </div>
     </div>
@@ -38,7 +39,7 @@ function LeaveModal({ onLeave, onCancel }) {
 }
 
 // ── Top nav ───────────────────────────────────────────────
-function Nav({ tab, onTabClick, username, onSignOut }) {
+function Nav({ tab, onTabClick, username, onSignOut, onProfile, activeCar, activeTab }) {
   const tabs = [
     { id: 'garage',  label: 'Garage'   },
     { id: 'advisor', label: 'Upgrades' },
@@ -52,6 +53,7 @@ function Nav({ tab, onTabClick, username, onSignOut }) {
       padding: '0 24px', height: 48,
       position: 'sticky', top: 0, zIndex: 50,
     }}>
+      {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 28 }}>
         <div style={{ width: 3, height: 22, background: t.accent, borderRadius: 2 }} />
         <span style={{
@@ -62,7 +64,8 @@ function Nav({ tab, onTabClick, username, onSignOut }) {
         </span>
       </div>
 
-      <div style={{ display: 'flex', gap: 2, flex: 1 }}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 2, flex: 1, alignItems: 'center' }}>
         {tabs.map(({ id, label }) => (
           <button
             key={id} onClick={() => onTabClick(id)}
@@ -78,10 +81,41 @@ function Nav({ tab, onTabClick, username, onSignOut }) {
             {label}
           </button>
         ))}
+
+        {/* Breadcrumb — shown when in build */}
+        {activeCar && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+            <span style={{ color: t.border, fontSize: 14 }}>›</span>
+            <span style={{ fontFamily: t.mono, fontSize: 11, color: t.dim }}>
+              {activeCar.car?.make} {activeCar.car?.model}
+            </span>
+            {activeTab && (
+              <>
+                <span style={{ color: t.border, fontSize: 14 }}>›</span>
+                <span style={{ fontFamily: t.mono, fontSize: 11, color: t.accent, textTransform: 'uppercase' }}>
+                  {activeTab}
+                </span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontFamily: t.mono, fontSize: 11, color: t.dim }}>{username}</span>
+      {/* User area */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          onClick={onProfile}
+          style={{
+            background: 'none', border: `1px solid ${t.border}`, borderRadius: 4,
+            color: t.mid, fontFamily: t.mono, fontSize: 11, cursor: 'pointer',
+            padding: '4px 10px', textTransform: 'uppercase', letterSpacing: '0.06em',
+            transition: 'border-color 0.15s',
+          }}
+          onMouseOver={e => e.currentTarget.style.borderColor = t.accent}
+          onMouseOut={e => e.currentTarget.style.borderColor = t.border}
+        >
+          {username}
+        </button>
         <Btn variant="ghost" small onClick={onSignOut}>Sign Out</Btn>
       </div>
     </div>
@@ -94,7 +128,11 @@ export default function App() {
   const [authReady,  setAuthReady]  = useState(false)
   const [tab,        setTab]        = useState('garage')
   const [activeCar,  setActiveCar]  = useState(null)
-  const [pendingTab, setPendingTab] = useState(null)  // tab waiting for confirm
+  const [activeTab,  setActiveTab]  = useState(null)  // build sub-tab
+  const [pendingTab, setPendingTab] = useState(null)
+  const [showProfile, setShowProfile] = useState(false)
+  // Generic confirm modal state
+  const [confirm,    setConfirm]    = useState(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -117,49 +155,66 @@ export default function App() {
   if (!session) return <Login />
 
   const userId   = session.user.id
-  const username = session.user.user_metadata?.username || session.user.email
+  const username = session.user.user_metadata?.username || session.user.email?.split('@')[0]
 
   const signOut = () => {
     supabase.auth.signOut()
-    setActiveCar(null); setTab('garage')
+    setActiveCar(null); setTab('garage'); setShowProfile(false)
   }
 
-  // Nav tab click — if in a build, ask before leaving
   const handleTabClick = (id) => {
-    if (activeCar) {
-      setPendingTab(id)   // triggers LeaveModal
-    } else {
-      setTab(id)
-    }
+    if (activeCar) { setPendingTab(id) }
+    else if (showProfile) { setShowProfile(false); setTab(id) }
+    else { setTab(id) }
+  }
+
+  const handleProfileClick = () => {
+    if (activeCar) { setPendingTab('__profile__') }
+    else { setShowProfile(true) }
   }
 
   const confirmLeave = () => {
     setActiveCar(null)
-    setTab(pendingTab)
+    if (pendingTab === '__profile__') { setShowProfile(true); setTab('garage') }
+    else { setTab(pendingTab); setShowProfile(false) }
     setPendingTab(null)
   }
 
-  const cancelLeave = () => setPendingTab(null)
+  // Expose global confirm modal for garage delete etc.
+  const showConfirm = (opts) => new Promise(resolve => {
+    setConfirm({ ...opts, resolve })
+  })
+
+  const handleConfirm = () => { confirm.resolve(true);  setConfirm(null) }
+  const handleCancel  = () => { confirm.resolve(false); setConfirm(null) }
+
+  const currentTab = showProfile ? '__profile__' : activeCar ? null : tab
 
   return (
     <>
       <Nav
-        tab={activeCar ? null : tab}
+        tab={currentTab}
         onTabClick={handleTabClick}
         username={username}
         onSignOut={signOut}
+        onProfile={handleProfileClick}
+        activeCar={activeCar}
+        activeTab={activeTab}
       />
 
       <main>
-        {activeCar ? (
+        {showProfile ? (
+          <Profile session={session} onBack={() => setShowProfile(false)} />
+        ) : activeCar ? (
           <BuildEditor
             userCar={activeCar}
             onBack={() => setActiveCar(null)}
+            onTabChange={setActiveTab}
           />
         ) : (
           <>
             {tab === 'garage' && (
-              <Garage userId={userId} onSelectCar={setActiveCar} />
+              <Garage userId={userId} onSelectCar={setActiveCar} showConfirm={showConfirm} />
             )}
             {tab === 'advisor' && (
               <div style={{ padding: '40px 24px', textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13 }}>
@@ -171,8 +226,27 @@ export default function App() {
         )}
       </main>
 
+      {/* Leave build modal */}
       {pendingTab && (
-        <LeaveModal onLeave={confirmLeave} onCancel={cancelLeave} />
+        <ConfirmModal
+          title="Leave build?"
+          message="Any unsaved changes to your upgrades or tune will be lost."
+          confirmLabel="Leave without saving"
+          onConfirm={confirmLeave}
+          onCancel={() => setPendingTab(null)}
+        />
+      )}
+
+      {/* Generic confirm modal */}
+      {confirm && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel || 'Confirm'}
+          confirmVariant={confirm.variant || 'danger'}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+        />
       )}
     </>
   )

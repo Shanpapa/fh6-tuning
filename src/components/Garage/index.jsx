@@ -181,7 +181,7 @@ function AddCarModal({ userId, onClose, onAdded }) {
 }
 
 // ── Garage (main view) ────────────────────────────────────
-export default function Garage({ userId, onSelectCar }) {
+export default function Garage({ userId, onSelectCar, showConfirm }) {
   const [userCars, setUserCars] = useState([])
   const [loading,  setLoading]  = useState(true)
   const [showAdd,  setShowAdd]  = useState(false)
@@ -201,7 +201,14 @@ export default function Garage({ userId, onSelectCar }) {
   useEffect(() => { load() }, [userId])
 
   const remove = async (id) => {
-    if (!confirm('Remove this car from your garage?')) return
+    const ok = showConfirm
+      ? await showConfirm({
+          title: 'Remove car?',
+          message: 'This will remove the car and all its builds from your garage.',
+          confirmLabel: 'Remove',
+        })
+      : window.confirm('Remove this car from your garage?')
+    if (!ok) return
     await supabase.from('user_cars').delete().eq('id', id)
     load()
   }
