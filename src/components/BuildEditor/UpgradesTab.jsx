@@ -1,22 +1,22 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase.js'
-import { useDescriptions } from '../../lib/useDescriptions.js'
 import { t } from '../../lib/theme.js'
 import { Btn, Spinner, InfoTooltip } from '../UI/index.jsx'
+import { useDescriptions } from '../../lib/useDescriptions.js'
 
 // ── Stat display config ───────────────────────────────────
 const STAT_SECTIONS = [
   {
     label: 'Performance',
     stats: [
-      { key: 'power_hp',      label: 'Power',         unit: 'hp',  lowerBetter: false },
-      { key: 'torque_nm',     label: 'Torque',        unit: 'Nm',  lowerBetter: false },
-      { key: 'weight_kg',     label: 'Weight',        unit: 'kg',  lowerBetter: true  },
-      { key: 'top_speed_kmh', label: 'Top Speed',     unit: 'km/h',lowerBetter: false },
-      { key: 'accel_0_97',    label: '0–97 km/h',     unit: 's',   lowerBetter: true  },
-      { key: 'accel_0_161',   label: '0–161 km/h',    unit: 's',   lowerBetter: true  },
-      { key: 'brake_dist_97', label: 'Brake 97→0',    unit: 'm',   lowerBetter: true  },
-      { key: 'brake_dist_161',label: 'Brake 161→0',   unit: 'm',   lowerBetter: true  },
+      { key: 'power_hp',       label: 'Power',      unit: 'hp',   lowerBetter: false },
+      { key: 'torque_nm',      label: 'Torque',     unit: 'Nm',   lowerBetter: false },
+      { key: 'weight_kg',      label: 'Weight',     unit: 'kg',   lowerBetter: true  },
+      { key: 'top_speed_kmh',  label: 'Top Speed',  unit: 'km/h', lowerBetter: false },
+      { key: 'accel_0_97',     label: '0–97 km/h',  unit: 's',    lowerBetter: true  },
+      { key: 'accel_0_161',    label: '0–161 km/h', unit: 's',    lowerBetter: true  },
+      { key: 'brake_dist_97',  label: 'Brake 97→0', unit: 'm',    lowerBetter: true  },
+      { key: 'brake_dist_161', label: 'Brake 161→0',unit: 'm',    lowerBetter: true  },
     ],
   },
   {
@@ -35,6 +35,12 @@ const STAT_SECTIONS = [
 // ── Helpers ───────────────────────────────────────────────
 function round2(n) { return Math.round(n * 100) / 100 }
 
+// Convert display name to description key slug
+function toDescKey(prefix, name) {
+  const slug = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+  return `${prefix}${slug}`
+}
+
 function fmtVal(v, unit) {
   if (v == null) return '—'
   const n = typeof v === 'number' ? round2(v) : parseFloat(v)
@@ -51,10 +57,9 @@ function fmtDelta(d, unit, lowerBetter) {
 
 // ── Stat row ──────────────────────────────────────────────
 function StatRow({ label, base, newVal, unit, lowerBetter }) {
-  const delta = (base != null && newVal != null) ? newVal - base : null
+  const delta    = (base != null && newVal != null) ? newVal - base : null
   const hasDelta = delta != null && Math.abs(delta) > 0.001
-  const fmt = fmtDelta(delta, unit, lowerBetter)
-
+  const fmt      = fmtDelta(delta, unit, lowerBetter)
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -64,21 +69,13 @@ function StatRow({ label, base, newVal, unit, lowerBetter }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {hasDelta ? (
           <>
-            <span style={{ fontSize: 12, color: t.mid, fontFamily: t.mono }}>
-              {fmtVal(base, unit)}
-            </span>
+            <span style={{ fontSize: 12, color: t.mid,  fontFamily: t.mono }}>{fmtVal(base, unit)}</span>
             <span style={{ fontSize: 11, color: t.dim }}>→</span>
-            <span style={{ fontSize: 12, color: t.text, fontFamily: t.mono, fontWeight: 700 }}>
-              {fmtVal(newVal, unit)}
-            </span>
-            <span style={{ fontSize: 11, fontFamily: t.mono, color: fmt?.color }}>
-              {fmt?.text}
-            </span>
+            <span style={{ fontSize: 12, color: t.text, fontFamily: t.mono, fontWeight: 700 }}>{fmtVal(newVal, unit)}</span>
+            <span style={{ fontSize: 11, fontFamily: t.mono, color: fmt?.color }}>{fmt?.text}</span>
           </>
         ) : (
-          <span style={{ fontSize: 12, color: t.mid, fontFamily: t.mono }}>
-            {fmtVal(base, unit)}
-          </span>
+          <span style={{ fontSize: 12, color: t.mid, fontFamily: t.mono }}>{fmtVal(base, unit)}</span>
         )}
       </div>
     </div>
@@ -88,43 +85,34 @@ function StatRow({ label, base, newVal, unit, lowerBetter }) {
 // ── PI bar ────────────────────────────────────────────────
 function PiBar({ current, target }) {
   if (!target) return null
-  const pct     = Math.min((current / target) * 100, 100)
-  const over    = current > target
-  const barColor= over ? t.red : t.green
-  const label   = over ? 'OVER LIMIT' : 'OK'
-  const labelCol= over ? t.red : t.green
-
+  const pct      = Math.min((current / target) * 100, 100)
+  const over     = current > target
+  const barColor = over ? t.red : t.green
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6,
-      }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <span style={{ fontFamily: t.mono, fontSize: 13, fontWeight: 700, color: over ? t.red : t.text }}>
           PI: {current} / {target}
         </span>
-        <span style={{ fontFamily: t.mono, fontSize: 11, color: labelCol, fontWeight: 700 }}>
-          {label}
+        <span style={{ fontFamily: t.mono, fontSize: 11, color: over ? t.red : t.green, fontWeight: 700 }}>
+          {over ? 'OVER LIMIT' : 'OK'}
         </span>
       </div>
-      <div style={{
-        background: t.surf3, borderRadius: 3, height: 6, overflow: 'hidden',
-      }}>
+      <div style={{ background: t.surf3, borderRadius: 3, height: 6, overflow: 'hidden' }}>
         <div style={{
-          width: `${pct}%`, height: '100%',
-          background: barColor, borderRadius: 3,
-          transition: 'width 0.2s, background 0.2s',
+          width: `${pct}%`, height: '100%', background: barColor,
+          borderRadius: 3, transition: 'width 0.2s, background 0.2s',
         }} />
       </div>
     </div>
   )
 }
 
-// ── Part item (available list) ────────────────────────────
+// ── Part item ─────────────────────────────────────────────
 function PartItem({ part, installed, onToggle }) {
   const [hover, setHover] = useState(false)
-  const piSign = part.pi_change > 0 ? `+${part.pi_change}` : part.pi_change < 0 ? `${part.pi_change}` : '±0'
+  const piSign  = part.pi_change > 0 ? `+${part.pi_change}` : part.pi_change < 0 ? `${part.pi_change}` : '±0'
   const piColor = part.pi_change > 0 ? t.red : part.pi_change < 0 ? t.green : t.dim
-
   return (
     <div
       onClick={onToggle}
@@ -160,7 +148,8 @@ function PartItem({ part, installed, onToggle }) {
 
 // ── Installed part chip ───────────────────────────────────
 function InstalledChip({ part, onRemove }) {
-  const piSign = part.pi_change > 0 ? `+${part.pi_change}` : part.pi_change < 0 ? `${part.pi_change}` : '±0'
+  const piSign  = part.pi_change > 0 ? `+${part.pi_change}` : part.pi_change < 0 ? `${part.pi_change}` : '±0'
+  const piColor = part.pi_change > 0 ? t.red : part.pi_change < 0 ? t.green : t.dim
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -170,58 +159,145 @@ function InstalledChip({ part, onRemove }) {
       <div>
         <span style={{ fontSize: 12, fontFamily: t.mono, color: t.text }}>{part.name}</span>
         <span style={{ fontSize: 11, fontFamily: t.mono, color: t.dim, marginLeft: 8 }}>
-          {part.category}
+          {part.subcategory || part.category}
         </span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{
-          fontSize: 11, fontFamily: t.mono,
-          color: part.pi_change > 0 ? t.red : part.pi_change < 0 ? t.green : t.dim,
-          fontWeight: 700,
-        }}>
-          PI {piSign}
-        </span>
+        <span style={{ fontSize: 11, fontFamily: t.mono, color: piColor, fontWeight: 700 }}>PI {piSign}</span>
         <button
           onClick={onRemove}
-          style={{
-            background: 'none', border: 'none', color: t.dim, cursor: 'pointer',
-            fontSize: 13, padding: '0 2px', lineHeight: 1,
-          }}
+          style={{ background: 'none', border: 'none', color: t.dim, cursor: 'pointer', fontSize: 13, padding: '0 2px', lineHeight: 1 }}
         >✕</button>
       </div>
     </div>
   )
 }
 
+// ── Grouped parts panel ───────────────────────────────────
+function AvailablePartsPanel({ grouped, installedIds, onToggle, descs, showTooltips }) {
+  const [collapsed, setCollapsed] = useState({})
+
+  const toggleCat = (key) => setCollapsed(p => ({ ...p, [key]: !p[key] }))
+
+  return (
+    <div style={{
+      background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8,
+      padding: 16, overflowY: 'auto', maxHeight: 'calc(100vh - 280px)',
+    }}>
+      <div style={{
+        fontSize: 12, fontFamily: t.mono, color: t.mid,
+        textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12,
+      }}>
+        Available Parts
+      </div>
+
+      {Object.entries(grouped).map(([cat, subcats]) => {
+        const catKey  = toDescKey('parts_', cat)
+        const catDesc = descs[catKey]
+        const isCatCollapsed = collapsed[cat]
+
+        return (
+          <div key={cat} style={{ marginBottom: 14 }}>
+            {/* Main category header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '5px 4px', marginBottom: isCatCollapsed ? 0 : 6,
+              borderBottom: `1px solid ${t.accent}44`, cursor: 'pointer',
+            }}
+              onClick={() => toggleCat(cat)}
+            >
+              <span style={{
+                fontSize: 11, fontFamily: t.mono, color: t.accent,
+                textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, flex: 1,
+              }}>
+                {cat}
+              </span>
+              {catDesc && showTooltips && (
+                <InfoTooltip title={catDesc.title} body={catDesc.body} show />
+              )}
+              <span style={{ fontSize: 10, color: t.dim, marginLeft: 4 }}>
+                {isCatCollapsed ? '▸' : '▾'}
+              </span>
+            </div>
+
+            {/* Subcategories */}
+            {!isCatCollapsed && Object.entries(subcats).map(([subcat, parts]) => {
+              const subcatKey  = toDescKey('parts_', subcat)
+              const subcatDesc = descs[subcatKey]
+              const isSubCollapsed = collapsed[`${cat}__${subcat}`]
+
+              return (
+                <div key={subcat} style={{ marginBottom: 8, paddingLeft: 10 }}>
+                  {/* Subcategory header */}
+                  <div
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '3px 4px', marginBottom: isSubCollapsed ? 0 : 4,
+                      borderBottom: `1px solid ${t.border}`, cursor: 'pointer',
+                    }}
+                    onClick={() => toggleCat(`${cat}__${subcat}`)}
+                  >
+                    <span style={{
+                      fontSize: 10, fontFamily: t.mono, color: t.mid,
+                      textTransform: 'uppercase', letterSpacing: '0.1em', flex: 1,
+                    }}>
+                      {subcat}
+                    </span>
+                    {subcatDesc && showTooltips && (
+                      <InfoTooltip title={subcatDesc.title} body={subcatDesc.body} show />
+                    )}
+                    <span style={{ fontSize: 9, color: t.dim, marginLeft: 4 }}>
+                      {isSubCollapsed ? '▸' : '▾'}
+                    </span>
+                  </div>
+
+                  {/* Parts */}
+                  {!isSubCollapsed && parts.map(p => (
+                    <PartItem
+                      key={p.id} part={p}
+                      installed={installedIds.includes(p.id)}
+                      onToggle={() => onToggle(p.id)}
+                    />
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Main UpgradesTab ──────────────────────────────────────
 export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
-  const descs = useDescriptions()
-  const [allParts,    setAllParts]    = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [installedIds,setInstalledIds]= useState(
+  const [allParts,     setAllParts]     = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [installedIds, setInstalledIds] = useState(
     Array.isArray(build.installed_parts) ? build.installed_parts : []
   )
-  const [saving, setSaving] = useState(false)
-  const [saved,  setSaved]  = useState(false)
+  const [saving,       setSaving]       = useState(false)
+  const [saved,        setSaved]        = useState(false)
+  const [showTooltips, setShowTooltips] = useState(true)
+  const descs = useDescriptions()
 
-  // Load all parts for this car
   useEffect(() => {
     if (!car?.id) return
     setLoading(true)
-    supabase.from('car_parts')
-      .select('*')
-      .eq('car_id', car.id)
-      .order('category')
+    supabase.from('car_parts').select('*').eq('car_id', car.id)
+      .order('category').order('subcategory').order('name')
       .then(({ data }) => { setAllParts(data || []); setLoading(false) })
   }, [car?.id])
 
-  // Group parts by category
+  // Group: category → subcategory → parts[]
   const grouped = useMemo(() => {
     const map = {}
     allParts.forEach(p => {
-      const cat = p.category || 'Other'
-      if (!map[cat]) map[cat] = []
-      map[cat].push(p)
+      const cat    = p.category    || 'Other'
+      const subcat = p.subcategory || 'General'
+      if (!map[cat]) map[cat] = {}
+      if (!map[cat][subcat]) map[cat][subcat] = []
+      map[cat][subcat].push(p)
     })
     return map
   }, [allParts])
@@ -231,7 +307,6 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
     [allParts, installedIds]
   )
 
-  // Compute cumulative stats
   const { baseStats, newStats, currentPi } = useMemo(() => {
     const base = car?.base_stats || {}
     const allKeys = new Set([
@@ -240,7 +315,7 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
     ])
     const next = {}
     allKeys.forEach(k => {
-      const b = base[k]
+      const b     = base[k]
       const delta = installedParts.reduce((acc, p) => {
         const v = p.effects?.[k]
         return typeof v === 'number' ? acc + v : acc
@@ -266,10 +341,14 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
   const save = async () => {
     setSaving(true)
     await supabase.from('builds')
-      .update({ installed_parts: installedIds, current_pi: currentPi, updated_at: new Date().toISOString() })
+      .update({
+        installed_parts: installedIds,
+        current_pi: currentPi,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', build.id)
     setSaving(false); setSaved(true)
-    onPartsChange?.(installedIds)
+    onPartsChange?.(installedParts)
     setTimeout(() => setSaved(false), 2000)
   }
 
@@ -287,106 +366,98 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
   )
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-
-      {/* LEFT — available parts */}
+    <div>
+      {/* Tooltip toggle */}
       <div style={{
-        background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8,
-        padding: 16, overflowY: 'auto', maxHeight: 'calc(100vh - 280px)',
+        display: 'flex', justifyContent: 'flex-end', marginBottom: 10,
       }}>
-        <div style={{
-          fontSize: 12, fontFamily: t.mono, color: t.mid,
-          textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12,
-        }}>
-          Available Parts
-        </div>
-        {Object.entries(grouped).map(([cat, parts]) => (
-          <div key={cat} style={{ marginBottom: 16 }}>
-            <div style={{
-              fontSize: 10, fontFamily: t.mono, color: t.accent,
-              textTransform: 'uppercase', letterSpacing: '0.12em',
-              marginBottom: 6, paddingBottom: 4,
-              borderBottom: `1px solid ${t.border}`,
-            }}>
-              {cat}
-            </div>
-            {parts.map(p => (
-              <PartItem
-                key={p.id} part={p}
-                installed={installedIds.includes(p.id)}
-                onToggle={() => toggle(p.id)}
-              />
-            ))}
-          </div>
-        ))}
+        <button
+          onClick={() => setShowTooltips(p => !p)}
+          style={{
+            background: showTooltips ? `${t.accent}18` : 'transparent',
+            border: `1px solid ${showTooltips ? t.accent + '55' : t.border}`,
+            color: showTooltips ? t.accent : t.dim,
+            borderRadius: 4, padding: '5px 10px', fontSize: 10,
+            fontFamily: t.mono, cursor: 'pointer', fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+          }}
+        >
+          {showTooltips ? 'ℹ ON' : 'ℹ OFF'}
+        </button>
       </div>
 
-      {/* RIGHT — installed + stats */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {/* LEFT — available parts */}
+        <AvailablePartsPanel
+          grouped={grouped}
+          installedIds={installedIds}
+          onToggle={toggle}
+          descs={descs}
+          showTooltips={showTooltips}
+        />
 
-        {/* Installed parts list */}
-        <div style={{
-          background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8, padding: 16,
-        }}>
+        {/* RIGHT — installed + stats */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Installed */}
           <div style={{
-            fontSize: 11, fontFamily: t.mono, color: t.dim,
-            textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10,
+            background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8, padding: 16,
           }}>
-            Installed ({installedParts.length})
-          </div>
-          {installedParts.length === 0 ? (
-            <div style={{ fontSize: 12, color: t.dim, fontFamily: t.mono, padding: '8px 0' }}>
-              Click parts on the left to install
+            <div style={{
+              fontSize: 12, fontFamily: t.mono, color: t.mid,
+              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10,
+            }}>
+              Installed ({installedParts.length})
             </div>
-          ) : (
-            installedParts.map(p => (
-              <InstalledChip key={p.id} part={p} onRemove={() => toggle(p.id)} />
-            ))
-          )}
-
-          {/* PI bar */}
-          <PiBar current={currentPi} target={build.target_pi} />
-
-          {/* Save */}
-          <div style={{ marginTop: 12 }}>
-            <Btn onClick={save} disabled={saving} full>
-              {saving ? '…' : saved ? '✓ Saved' : 'Save Parts'}
-            </Btn>
-          </div>
-        </div>
-
-        {/* Stat changes */}
-        <div style={{
-          background: t.surf, border: `1px solid ${t.border}`,
-          borderRadius: 8, padding: 16,
-          overflowY: 'auto', maxHeight: 'calc(100vh - 480px)',
-        }}>
-          <div style={{
-            fontSize: 11, fontFamily: t.mono, color: t.dim,
-            textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10,
-          }}>
-            Stat Changes
-          </div>
-          {STAT_SECTIONS.map(sec => (
-            <div key={sec.label} style={{ marginBottom: 14 }}>
-              <div style={{
-                fontSize: 10, fontFamily: t.mono, color: t.accent,
-                textTransform: 'uppercase', letterSpacing: '0.12em',
-                marginBottom: 4, paddingBottom: 3,
-                borderBottom: `1px solid ${t.border}`,
-              }}>
-                {sec.label}
+            {installedParts.length === 0 ? (
+              <div style={{ fontSize: 12, color: t.dim, fontFamily: t.mono, padding: '8px 0' }}>
+                Click parts on the left to install
               </div>
-              {sec.stats.map(({ key, label, unit, lowerBetter }) => (
-                <StatRow
-                  key={key} label={label}
-                  base={baseStats[key] ?? null}
-                  newVal={newStats[key] ?? baseStats[key] ?? null}
-                  unit={unit} lowerBetter={lowerBetter}
-                />
-              ))}
+            ) : (
+              installedParts.map(p => (
+                <InstalledChip key={p.id} part={p} onRemove={() => toggle(p.id)} />
+              ))
+            )}
+            <PiBar current={currentPi} target={build.target_pi} />
+            <div style={{ marginTop: 12 }}>
+              <Btn onClick={save} disabled={saving} full>
+                {saving ? '…' : saved ? '✓ Saved' : 'Save Parts'}
+              </Btn>
             </div>
-          ))}
+          </div>
+
+          {/* Stat changes */}
+          <div style={{
+            background: t.surf, border: `1px solid ${t.border}`,
+            borderRadius: 8, padding: 16,
+            overflowY: 'auto', maxHeight: 'calc(100vh - 480px)',
+          }}>
+            <div style={{
+              fontSize: 12, fontFamily: t.mono, color: t.mid,
+              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10,
+            }}>
+              Stat Changes
+            </div>
+            {STAT_SECTIONS.map(sec => (
+              <div key={sec.label} style={{ marginBottom: 14 }}>
+                <div style={{
+                  fontSize: 10, fontFamily: t.mono, color: t.accent,
+                  textTransform: 'uppercase', letterSpacing: '0.12em',
+                  marginBottom: 4, paddingBottom: 3,
+                  borderBottom: `1px solid ${t.border}`,
+                }}>
+                  {sec.label}
+                </div>
+                {sec.stats.map(({ key, label, unit, lowerBetter }) => (
+                  <StatRow
+                    key={key} label={label}
+                    base={baseStats[key] ?? null}
+                    newVal={newStats[key] ?? baseStats[key] ?? null}
+                    unit={unit} lowerBetter={lowerBetter}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
