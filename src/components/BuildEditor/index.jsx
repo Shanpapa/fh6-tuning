@@ -136,10 +136,21 @@ function BuildCard({ build, onClick, onDelete }) {
         {build.name}
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-        {build.goal         && <GoalBadge goal={build.goal} />}
-        {build.target_class && <ClassBadge cls={build.target_class} pi={build.target_pi} />}
+        {build.goal && <GoalBadge goal={build.goal} />}
+        {(() => {
+          const displayPi  = build.current_pi ?? build.target_pi
+          const displayCls = displayPi ? classFromPi(displayPi) : build.target_class
+          return displayCls
+            ? <ClassBadge cls={displayCls} pi={displayPi} />
+            : null
+        })()}
+        {build.target_pi && build.current_pi && build.current_pi !== build.target_pi && (
+          <span style={{ fontSize: 10, fontFamily: t.mono, color: t.dim, alignSelf: 'center' }}>
+            target {build.target_pi}
+          </span>
+        )}
       </div>
-      <div style={{ fontSize: 11, color: t.dim, fontFamily: t.mono }}>Updated {updated}</div>
+      <div style={{ fontSize: 12, color: t.dim, fontFamily: t.mono }}>Updated {updated}</div>
       <button
         onClick={e => { e.stopPropagation(); onDelete() }}
         style={{
@@ -182,14 +193,14 @@ function BuildsList({ userCar, onBack, onSelectBuild }) {
       <button
         onClick={onBack}
         style={{
-          background: 'none', border: 'none', color: t.dim, fontFamily: t.mono,
-          fontSize: 11, cursor: 'pointer', marginBottom: 20, padding: 0,
+          background: 'none', border: 'none', color: t.mid, fontFamily: t.mono,
+          fontSize: 13, cursor: 'pointer', marginBottom: 20, padding: 0,
           textTransform: 'uppercase', letterSpacing: '0.08em',
         }}
       >← Garage</button>
 
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 12, color: t.dim, fontFamily: t.mono }}>{car?.year}</div>
+        <div style={{ fontSize: 13, color: t.mid, fontFamily: t.mono }}>{car?.year}</div>
         <div style={{
           fontFamily: t.head, fontSize: 28, fontWeight: 800,
           textTransform: 'uppercase', letterSpacing: '0.04em', color: t.text, lineHeight: 1.1,
@@ -244,6 +255,14 @@ function BuildEdit({ build, userCar, onBack }) {
   const [tab,            setTab]           = useState('upgrades')
   const [installedParts, setInstalledParts] = useState([])
 
+  // Load installed parts on mount
+  useEffect(() => {
+    const ids = Array.isArray(build.installed_parts) ? build.installed_parts : []
+    if (!ids.length) return
+    supabase.from('car_parts').select('*').in('id', ids)
+      .then(({ data }) => setInstalledParts(data || []))
+  }, [build.id])
+
   const TABS = [
     { id: 'upgrades', label: 'Upgrades' },
     { id: 'tune',     label: 'Tune'     },
@@ -254,8 +273,8 @@ function BuildEdit({ build, userCar, onBack }) {
       <button
         onClick={onBack}
         style={{
-          background: 'none', border: 'none', color: t.dim, fontFamily: t.mono,
-          fontSize: 11, cursor: 'pointer', marginBottom: 16, padding: 0,
+          background: 'none', border: 'none', color: t.mid, fontFamily: t.mono,
+          fontSize: 13, cursor: 'pointer', marginBottom: 16, padding: 0,
           textTransform: 'uppercase', letterSpacing: '0.08em',
         }}
       >← {car?.make} {car?.model}</button>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase.js'
+import { useDescriptions } from '../../lib/useDescriptions.js'
 import { t } from '../../lib/theme.js'
-import { Btn, Spinner } from '../UI/index.jsx'
+import { Btn, Spinner, InfoTooltip } from '../UI/index.jsx'
 
 // ── Stat display config ───────────────────────────────────
 const STAT_SECTIONS = [
@@ -194,6 +195,7 @@ function InstalledChip({ part, onRemove }) {
 
 // ── Main UpgradesTab ──────────────────────────────────────
 export default function UpgradesTab({ build, car, onPartsChange }) {
+  const descs = useDescriptions()
   const [allParts,    setAllParts]    = useState([])
   const [loading,     setLoading]     = useState(true)
   const [installedIds,setInstalledIds]= useState(
@@ -261,7 +263,7 @@ export default function UpgradesTab({ build, car, onPartsChange }) {
   const save = async () => {
     setSaving(true)
     await supabase.from('builds')
-      .update({ installed_parts: installedIds, updated_at: new Date().toISOString() })
+      .update({ installed_parts: installedIds, current_pi: currentPi, updated_at: new Date().toISOString() })
       .eq('id', build.id)
     setSaving(false); setSaved(true)
     onPartsChange?.(installedIds)
@@ -290,7 +292,7 @@ export default function UpgradesTab({ build, car, onPartsChange }) {
         padding: 16, overflowY: 'auto', maxHeight: 'calc(100vh - 280px)',
       }}>
         <div style={{
-          fontSize: 11, fontFamily: t.mono, color: t.dim,
+          fontSize: 12, fontFamily: t.mono, color: t.mid,
           textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12,
         }}>
           Available Parts

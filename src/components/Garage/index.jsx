@@ -21,7 +21,7 @@ function GarageCard({ userCar, car, onClick, onRemove }) {
       }}
     >
       <div style={{ marginBottom: 6 }}>
-        <div style={{ fontSize: 12, color: t.dim, fontFamily: t.mono }}>{car.year}</div>
+        <div style={{ fontSize: 13, color: t.mid, fontFamily: t.mono }}>{car.year}</div>
         <div style={{
           fontFamily: t.head, fontSize: 22, fontWeight: 700,
           textTransform: 'uppercase', letterSpacing: '0.04em', color: t.text, lineHeight: 1.1,

@@ -240,6 +240,57 @@ export const SectionHead = ({ children, action }) => (
   </div>
 )
 
+
+// ── Info Tooltip ──────────────────────────────────────────
+export function InfoTooltip({ title, body, show = true }) {
+  const [visible, setVisible] = useState(false)
+  if (!show || !body) return null
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <button
+        onMouseEnter={() => setVisible(true)}
+        onMouseLeave={() => setVisible(false)}
+        style={{
+          background: 'none', border: `1px solid ${t.border}`, borderRadius: '50%',
+          color: t.dim, width: 16, height: 16, fontSize: 9, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: t.mono, lineHeight: 1, flexShrink: 0,
+          transition: 'border-color 0.15s, color 0.15s',
+        }}
+        onMouseOver={e => { e.currentTarget.style.borderColor = t.accent; e.currentTarget.style.color = t.accent }}
+        onMouseOut={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.dim; setVisible(false) }}
+      >
+        i
+      </button>
+      {visible && (
+        <div style={{
+          position: 'absolute', bottom: '120%', left: '50%',
+          transform: 'translateX(-50%)',
+          background: t.surf2, border: `1px solid ${t.accent}55`,
+          borderRadius: 6, padding: '10px 14px',
+          width: 280, zIndex: 300,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            fontFamily: t.head, fontSize: 13, fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            color: t.accent, marginBottom: 6,
+          }}>
+            {title}
+          </div>
+          <div style={{
+            fontSize: 11, fontFamily: t.mono, color: t.mid,
+            lineHeight: 1.6,
+          }}>
+            {body}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // CSS for spinner animation (injected once)
 if (typeof document !== 'undefined' && !document.getElementById('ui-keyframes')) {
   const style = document.createElement('style')
