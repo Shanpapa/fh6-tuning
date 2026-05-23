@@ -412,3 +412,469 @@ export function getRecommendations(categoryId, answers) {
   if (!cat) return []
   return cat.getRecs(answers)
 }
+
+// ─────────────────────────────────────────────────────────
+// ROUND 2 CATEGORIES
+// ─────────────────────────────────────────────────────────
+
+// ── SUSPENSION / CHASSIS ───────────────────────────────────
+function getSuspensionRecs({ issue, when }) {
+  const recs = []
+
+  if (issue === 'bouncy') {
+    if (when === 'kerb') {
+      recs.push(
+        rec('TUNE', 'Bump Damping',    'Increase front and/or rear',              'Bump controls initial compression speed — more bump absorbs kerb impact',  1),
+        rec('TUNE', 'Rebound Damping', 'Decrease slightly',                       'If rebound is too fast it launches the car back up after kerb hit',       2),
+        rec('TUNE', 'Spring Rate',     'Stiffen slightly',                        'Softer springs compress too much over kerbs, losing contact patch',        3),
+      )
+    }
+    if (when === 'continuous') {
+      recs.push(
+        rec('TUNE', 'Rebound Damping', 'Decrease — this is almost always rebound','Excessive rebound fights the spring and causes oscillation',              1),
+        rec('TUNE', 'Bump Damping',    'Check ratio: rebound = bump ÷ 0.4',       'Mismatched bump/rebound causes continuous porpoising',                    2),
+        rec('TUNE', 'Spring Rate',     'Stiffen if springs are too soft',          'Very soft springs with fast rebound is the classic bounce combo',         3),
+      )
+    }
+    if (when === 'bottoming') {
+      recs.push(
+        rec('TUNE', 'Spring Rate',     'Stiffen — car is compressing too far',    'Bottoming means spring is too soft for the car weight and speed',         1),
+        rec('TUNE', 'Bump Damping',    'Increase to slow compression',            'Faster bump reduces peak compression depth',                             2),
+        rec('TUNE', 'Ride Height',     'Raise if available',                      'More ride height gives more suspension travel before bottoming',          3),
+      )
+    }
+  }
+
+  if (issue === 'too_stiff') {
+    recs.push(
+      rec('TUNE', 'Spring Rate',     'Soften front and/or rear',                  'Stiff springs skip over bumps instead of absorbing them — loss of grip', 1),
+      rec('TUNE', 'Bump Damping',    'Decrease — allow faster compression',       'High bump with stiff springs = zero compliance = no mechanical grip',    2),
+      rec('TUNE', 'Tire Pressure',   'Lower slightly',                            'Less pressure acts as a secondary suspension compliance layer',           3),
+    )
+  }
+
+  if (issue === 'weight_transfer') {
+    if (when === 'too_slow') {
+      recs.push(
+        rec('TUNE', 'Spring Rate',     'Soften — allow more body roll',           'Stiff springs transfer weight too slowly, reducing tire loading speed',  1),
+        rec('TUNE', 'ARB',             'Soften front and rear ARB',               'ARB stiffness directly controls roll speed — softer = faster transfer', 2),
+        rec('TUNE', 'Bump Damping',    'Decrease front',                          'High front bump resists dive, slowing weight to front tires',            3),
+      )
+    }
+    if (when === 'too_aggressive') {
+      recs.push(
+        rec('TUNE', 'Spring Rate',     'Stiffen to resist pitch/roll',            'More spring rate controls body motion speed under load changes',         1),
+        rec('TUNE', 'ARB',             'Stiffen front and/or rear',               'ARBs directly resist body roll — primary tool for roll stiffness',       2),
+        rec('TUNE', 'Rebound Damping', 'Increase — slow the return',              'Fast rebound after braking/cornering feels like aggressive weight snap', 3),
+      )
+    }
+  }
+
+  return dedup(recs)
+}
+
+// ── STEERING RESPONSE ──────────────────────────────────────
+function getSteeringRecs({ issue }) {
+  const recs = []
+
+  if (issue === 'slow_turnin') {
+    recs.push(
+      rec('TUNE', 'Front Toe',       'Add toe-out (−0.1° to −0.3°)',              'Toe-out is the single biggest turn-in response tuning lever',            1),
+      rec('TUNE', 'Caster',          'Set to 7.0° (FH6 default target)',          'Correct caster improves self-centering and turn-in feel',                2),
+      rec('TUNE', 'Front ARB',       'Soften slightly',                           'Stiff front ARB delays weight transfer to outer front tire',             3),
+      rec('TUNE', 'Front Rebound',   'Decrease — allow faster weight transfer',   'Slow rebound delays front tire loading on corner entry',                 4),
+      rec('UPGRADE', 'Front Tires',  'Upgrade compound',                          'Better front grip = faster response, especially slow-speed corners',     5),
+    )
+  }
+
+  if (issue === 'nervous') {
+    recs.push(
+      rec('TUNE', 'Front Toe',       'Reduce toe-out or add slight toe-in',       'Toe-out increases steering sensitivity — reduce for stability',          1),
+      rec('TUNE', 'Caster',          'Verify at 7.0° — too low causes twitchiness','Low caster reduces straight-line stability and self-centering',         2),
+      rec('TUNE', 'Front ARB',       'Stiffen slightly',                          'More ARB stiffness resists sudden lateral weight shifts',               3),
+      rec('TUNE', 'Front Spring',    'Stiffen slightly',                          'More front spring resists rapid pitch changes that cause darting',       4),
+    )
+  }
+
+  if (issue === 'self_centering') {
+    recs.push(
+      rec('TUNE', 'Caster',          'Increase toward 7.0°',                      'Caster is the primary driver of self-centering force in FH6',           1),
+      rec('TUNE', 'Front Toe',       'Add slight toe-in on rear to stabilise',    'Rear toe-in improves straight-line tracking and centering feel',         2),
+      rec('TUNE', 'Tire Pressure',   'Check — overinflated tires reduce feedback', 'High pressure reduces contact patch and self-centering feel',           3),
+    )
+  }
+
+  return dedup(recs)
+}
+
+// ── HIGH SPEED STABILITY ───────────────────────────────────
+function getHighSpeedRecs({ when, symptom }) {
+  const recs = []
+
+  if (symptom === 'floaty' || symptom === 'wandering') {
+    recs.push(
+      rec('TUNE', 'Aero Rear',       'Increase rear downforce',                   'Floaty/wandering at speed = not enough rear downforce for the speed',    1),
+      rec('TUNE', 'Aero Front',      'Balance front to match — target 0.40–0.45', 'FH6 aero balance target: 40–45% front. Too much front = understeer',    2),
+      rec('TUNE', 'Rear Spring',     'Stiffen for high-speed platforms',          'Stiffer rear resists aerodynamic body rise at speed',                   3),
+      rec('TUNE', 'Rear Toe',        'Add slight toe-in (0.1°–0.2°)',             'Rear toe-in improves high-speed straight-line tracking significantly',   4),
+    )
+  }
+
+  if (symptom === 'hs_understeer') {
+    recs.push(
+      rec('TUNE', 'Aero Front',      'Increase front downforce',                  'High-speed understeer is almost always an aero balance issue',           1),
+      rec('TUNE', 'Aero Balance',    'Target 0.40–0.45 front — check balance',   'FH6 target: 40–45% front. Max front / min rear meta is dead in FH6',    2),
+      rec('TUNE', 'Front Spring',    'Stiffen — resists aero-induced understeer', 'Front spring stiffness affects how aero load is distributed',            3),
+    )
+  }
+
+  if (symptom === 'rear_instability') {
+    recs.push(
+      rec('TUNE', 'Aero Rear',       'Increase rear downforce significantly',     'Rear instability at speed = rear losing grip due to insufficient aero', 1),
+      rec('TUNE', 'Rear Rebound',    'Decrease',                                  'Fast rebound amplifies aero-induced instability at speed',              2),
+      rec('TUNE', 'Rear Toe',        'Add toe-in',                                'Toe-in stabilises rear directional stability at high speed',             3),
+      rec('TUNE', 'Diff Accel',      'Reduce slightly',                           'High accel lock at speed increases rear instability risk',               4),
+    )
+  }
+
+  if (when === 'braking') {
+    recs.push(
+      rec('TUNE', 'Brake Bias',      'Move forward slightly',                     'High-speed brake instability often means rear is braking too hard',      1),
+      rec('TUNE', 'Rear Bump',       'Increase',                                  'More rear bump resists dive and weight shift under hard braking',        2),
+      rec('TUNE', 'Aero Rear',       'Increase',                                  'More rear aero load = more rear stability under braking',               3),
+    )
+  }
+
+  return dedup(recs)
+}
+
+// ── GEARING / POWER DELIVERY ───────────────────────────────
+function getGearingRecs({ issue }) {
+  const recs = []
+
+  if (issue === 'too_short') {
+    recs.push(
+      rec('TUNE', 'Final Drive',     'Lower (e.g. 3.85 → 3.50)',                  'Shorter final drive = more acceleration but hits limiter too soon',      1),
+      rec('TUNE', 'Individual Gears','Lengthen top 1–2 gears',                    'Stretching final gears gives more top speed without losing acceleration', 2),
+    )
+  }
+
+  if (issue === 'too_long') {
+    recs.push(
+      rec('TUNE', 'Final Drive',     'Raise (e.g. 3.50 → 3.85)',                  'Longer final drive = less torque per gear, better top speed',            1),
+      rec('TUNE', 'Individual Gears','Shorten lower gears',                       'Shortening 1–3 improves launch and low-speed acceleration',              2),
+    )
+  }
+
+  if (issue === 'top_speed') {
+    recs.push(
+      rec('TUNE', 'Final Drive',     'Lower the ratio',                           'Final drive directly sets the top speed ceiling',                        1),
+      rec('TUNE', 'Top Gear',        'Lengthen top gear',                         'Longer top gear = higher terminal velocity in that gear',                2),
+      rec('TUNE', 'Aero',            'Reduce total downforce',                    'Less aero drag = higher top speed, at the cost of cornering stability',  3),
+      rec('UPGRADE', 'Engine',       'Check power upgrades — may need more hp',   'If top speed is limited by power, gearing alone cannot fix it',          4),
+    )
+  }
+
+  if (issue === 'launch') {
+    recs.push(
+      rec('TUNE', 'Final Drive',     'Raise ratio for better 1st gear torque',    'More final drive = more torque multiplication at launch',                1),
+      rec('TUNE', 'Diff Accel',      'Increase on driven axle',                   'More accel locking distributes torque evenly at launch',                 2),
+      rec('TUNE', 'Gear 1',          'Shorten 1st gear',                          'Short 1st puts you in powerband immediately off the line',               3),
+      rec('UPGRADE', 'Tires',        'Drag compound — 1.4 bar',                   'Drag tires dramatically improve launch grip',                            4),
+    )
+  }
+
+  if (issue === 'mid_range') {
+    recs.push(
+      rec('TUNE', 'Individual Gears','Tighten ratio spread in mid gears',         'Closer gear ratios keep revs in powerband between shifts',               1),
+      rec('UPGRADE', 'Forced Induction', 'Check turbo/supercharger upgrade',      'Mid-range weakness often means torque curve peaks too high or too low',  2),
+      rec('TUNE', 'Final Drive',     'Adjust to better suit powerband',           'Final drive shifts the entire power delivery range up or down',          3),
+    )
+  }
+
+  return dedup(recs)
+}
+
+// ── THROTTLE RESPONSE ──────────────────────────────────────
+function getThrottleRecs({ issue }) {
+  const recs = []
+
+  if (issue === 'too_aggressive') {
+    recs.push(
+      rec('TUNE', 'Diff Accel',      'Decrease — reduces torque spike at tip-in', 'High diff accel amplifies aggressive throttle into wheel spin',          1),
+      rec('TUNE', 'Final Drive',     'Lengthen slightly',                         'Less torque multiplication = less aggressive initial response',           2),
+      rec('TUNE', 'Gear 1',          'Lengthen 1st gear',                         'Longer 1st reduces the peak torque available at tip-in',                 3),
+    )
+  }
+
+  if (issue === 'too_dull') {
+    recs.push(
+      rec('TUNE', 'Final Drive',     'Shorten — more torque multiplication',      'Shorter final drive sharpens throttle response across all gears',        1),
+      rec('TUNE', 'Diff Accel',      'Increase slightly',                         'More accel locking transfers power faster to the wheels',                2),
+      rec('UPGRADE', 'Engine',       'Check power upgrades for torque',           'Dull throttle can mean low torque in the mid-range',                     3),
+    )
+  }
+
+  if (issue === 'turbo_lag') {
+    recs.push(
+      rec('TUNE', 'Final Drive',     'Shorten to stay in boost RPM range',        'Keep revs in boost range to minimise felt lag',                          1),
+      rec('TUNE', 'Gear Ratios',     'Tighten spread to avoid dropping out of boost', 'Wider gaps cause more pronounced lag between shifts',               2),
+      rec('UPGRADE', 'Forced Induction', 'Consider turbo upgrade tier',           'Higher-tier turbos generally have faster spool and less lag',            3),
+    )
+  }
+
+  if (issue === 'hard_to_dose') {
+    recs.push(
+      rec('TUNE', 'Diff Accel',      'Decrease — more progressive power delivery','Over-locked diff makes small throttle inputs hard to modulate',          1),
+      rec('TUNE', 'Final Drive',     'Lengthen to spread the power range',        'Longer final drive gives more throttle travel before wheelspin',         2),
+      rec('TUNE', 'Rear ARB',        'Soften — more chassis compliance on throttle','Stiff rear ARB makes tiny throttle inputs feel snappy',               3),
+    )
+  }
+
+  return dedup(recs)
+}
+
+// ── AERO BALANCE ───────────────────────────────────────────
+function getAeroRecs({ when, symptom }) {
+  const recs = []
+
+  if (symptom === 'hs_understeer') {
+    recs.push(
+      rec('TUNE', 'Aero Front',      'Increase front downforce',                  'High-speed understeer = front losing grip faster than rear at speed',    1),
+      rec('TUNE', 'Aero Balance',    'Target 0.40–0.45 — NOTE: FH6 max-front meta is GONE', 'FH5 max front / min rear no longer works in FH6',             2),
+      rec('TUNE', 'Rear',            'Reduce rear if already at max',             'Reducing rear shifts balance forward, improving high-speed rotation',    3),
+    )
+  }
+
+  if (symptom === 'rear_instability') {
+    recs.push(
+      rec('TUNE', 'Aero Rear',       'Increase rear downforce',                   'Rear instability at speed = not enough rear aero load',                 1),
+      rec('TUNE', 'Aero Balance',    'Move balance rearward — above 0.45',        'If 0.45 balance still unstable, the car may need more total downforce',  2),
+      rec('TUNE', 'Rear Spring',     'Stiffen slightly',                          'Stiffer rear resists aero-induced body rise that reduces rear grip',     3),
+    )
+  }
+
+  if (symptom === 'aero_stall') {
+    recs.push(
+      rec('TUNE', 'Aero Rear',       'Reduce angle slightly — stall from too steep', 'Wing stall occurs when angle of attack exceeds the airfoil limit',   1),
+      rec('TUNE', 'Rear Spring',     'Stiffen — reduce rear squat under aero load', 'Body squat changes effective wing angle dynamically',                  2),
+      rec('UPGRADE', 'Aero Kit',     'Check aero package tier',                   'Higher-tier aero components have better stall resistance',              3),
+    )
+  }
+
+  if (when === 'fast_corner') {
+    recs.push(
+      rec('TUNE', 'Aero Balance',    'Fine-tune to 0.40–0.45 front',              'FH6 target for all builds — balance is more important than total load', 1),
+      rec('TUNE', 'Aero Front',      'Increase if understeering in fast corners', 'Fast corner understeer = front needs more downforce',                   2),
+      rec('TUNE', 'Aero Rear',       'Increase if rear unstable in fast corners', 'Fast corner oversteer = rear needs more downforce',                     3),
+    )
+  }
+
+  return dedup(recs)
+}
+
+// ── SURFACE / BUMP SENSITIVITY ─────────────────────────────
+function getSurfaceRecs({ issue }) {
+  const recs = []
+
+  if (issue === 'kerb_sensitivity') {
+    recs.push(
+      rec('TUNE', 'Bump Damping',    'Increase — slows compression over kerbs',   'More bump damping absorbs sharp kerb impacts without bottoming',         1),
+      rec('TUNE', 'Spring Rate',     'Stiffen slightly',                           'Slightly stiffer spring controls how far the car dips into the kerb',   2),
+      rec('TUNE', 'Rebound Damping', 'Decrease — faster return after kerb',       'If car is launched by kerbs, rebound is too fast — reduce it',          3),
+      rec('TUNE', 'Tire Pressure',   'Lower slightly',                             'Lower pressure = more sidewall flex = more natural kerb absorption',    4),
+    )
+  }
+
+  if (issue === 'road_camber') {
+    recs.push(
+      rec('TUNE', 'Rear Toe',        'Add toe-in (0.1°–0.2°)',                    'Rear toe-in resists camber-induced direction changes',                   1),
+      rec('TUNE', 'Front ARB',       'Stiffen slightly',                          'More front ARB resists lateral weight transfer from road camber',        2),
+      rec('TUNE', 'Front Spring',    'Stiffen — resists camber-induced dive',     'Softer springs are more sensitive to road camber changes',              3),
+    )
+  }
+
+  if (issue === 'bumpy_corner') {
+    recs.push(
+      rec('TUNE', 'Bump Damping',    'Decrease — allow faster compliance',        'On bumpy corners, too much bump damping = tire skipping over surface',  1),
+      rec('TUNE', 'Spring Rate',     'Soften slightly',                            'Softer springs allow the wheel to follow the bumpy surface better',     2),
+      rec('TUNE', 'Rebound Damping', 'Decrease to match: rebound = bump ÷ 0.4',  'Matched bump/rebound gives consistent compliance over rough surfaces',   3),
+      rec('TUNE', 'Tire Pressure',   'Lower — more contact patch compliance',     'Slightly lower pressure helps on bumpy surfaces',                       4),
+    )
+  }
+
+  if (issue === 'bottoming') {
+    recs.push(
+      rec('TUNE', 'Spring Rate',     'Stiffen — car is compressing too far',      'Bottoming means spring rate is too low for the car mass and speed',     1),
+      rec('TUNE', 'Bump Damping',    'Increase to slow compression peak',         'More bump damping limits peak compression depth over large bumps',      2),
+      rec('TUNE', 'Ride Height',     'Raise if available',                        'More ride height = more travel before bottoming',                       3),
+    )
+  }
+
+  return dedup(recs)
+}
+
+// ── APPEND ROUND 2 TO CATEGORIES ──────────────────────────
+DIAG_CATEGORIES.push(
+  {
+    id: 'suspension',
+    label: 'Suspension',
+    icon: '〰',
+    desc: 'Bouncy, too stiff, or wrong weight transfer',
+    questions: [
+      {
+        id: 'issue',
+        text: 'What is the suspension problem?',
+        options: [
+          { value: 'bouncy',          label: 'Bouncy / Pogo',        desc: 'Car bounces or oscillates' },
+          { value: 'too_stiff',       label: 'Too Stiff',            desc: 'No grip on bumps, skipping' },
+          { value: 'weight_transfer', label: 'Weight Transfer',      desc: 'Wrong pitch/roll behaviour' },
+        ],
+      },
+      {
+        id: 'when',
+        text: 'When does it happen?',
+        options: [
+          { value: 'kerb',        label: 'Over kerbs',       desc: 'Launched or destabilised by kerbs' },
+          { value: 'continuous',  label: 'Continuous',       desc: 'Ongoing bounce/oscillation' },
+          { value: 'bottoming',   label: 'Bottoming out',    desc: 'Suspension hits the stops' },
+          { value: 'too_slow',    label: 'Too slow transfer',desc: 'Late weight shift to tires' },
+          { value: 'too_aggressive', label: 'Too aggressive',desc: 'Violent weight snap' },
+        ],
+      },
+    ],
+    getRecs: getSuspensionRecs,
+  },
+  {
+    id: 'steering',
+    label: 'Steering',
+    icon: '◎',
+    desc: 'Slow, nervous or poor self-centering',
+    questions: [
+      {
+        id: 'issue',
+        text: 'What feels wrong with the steering?',
+        options: [
+          { value: 'slow_turnin',    label: 'Slow Turn-In',      desc: 'Late or dead steering response' },
+          { value: 'nervous',        label: 'Nervous / Twitchy', desc: 'Too sensitive, especially at speed' },
+          { value: 'self_centering', label: 'Poor Self-Centering', desc: 'Doesn\'t want to straighten up' },
+        ],
+      },
+    ],
+    getRecs: getSteeringRecs,
+  },
+  {
+    id: 'high_speed',
+    label: 'High Speed',
+    icon: '⚡',
+    desc: 'Unstable, floaty or drifting at high speed',
+    questions: [
+      {
+        id: 'when',
+        text: 'When does it happen?',
+        options: [
+          { value: 'straight',     label: 'Straight Line',    desc: 'Wandering or floating' },
+          { value: 'fast_corner',  label: 'Fast Corner',      desc: 'Sweepers or banked turns' },
+          { value: 'braking',      label: 'Braking Zone',     desc: 'Unstable under hard braking' },
+        ],
+      },
+      {
+        id: 'symptom',
+        text: 'What does it feel like?',
+        options: [
+          { value: 'floaty',          label: 'Floaty / Light',    desc: 'Car feels like it\'s flying' },
+          { value: 'wandering',       label: 'Wandering',         desc: 'Hard to hold a line' },
+          { value: 'hs_understeer',   label: 'High-Speed Understeer', desc: 'Pushes wide in fast corners' },
+          { value: 'rear_instability',label: 'Rear Instability',  desc: 'Rear steps out at speed' },
+          { value: 'aero_stall',      label: 'Aero Stall',        desc: 'Sudden grip loss feeling' },
+        ],
+      },
+    ],
+    getRecs: getHighSpeedRecs,
+  },
+  {
+    id: 'gearing',
+    label: 'Gearing',
+    icon: '⚙',
+    desc: 'Wrong ratios, limited top speed or poor acceleration',
+    questions: [
+      {
+        id: 'issue',
+        text: 'What is the gearing problem?',
+        options: [
+          { value: 'too_short',  label: 'Too Short',          desc: 'Hits rev limiter too often' },
+          { value: 'too_long',   label: 'Too Long',           desc: 'Slow acceleration, sluggish' },
+          { value: 'top_speed',  label: 'Limited Top Speed',  desc: 'Runs out of gear at high speed' },
+          { value: 'launch',     label: 'Poor Launch',        desc: '1st/2nd unusable, wheelspin or no drive' },
+          { value: 'mid_range',  label: 'Weak Mid-Range',     desc: 'Power gap between shifts' },
+        ],
+      },
+    ],
+    getRecs: getGearingRecs,
+  },
+  {
+    id: 'throttle',
+    label: 'Throttle',
+    icon: '▶',
+    desc: 'Too aggressive, dull or hard to modulate',
+    questions: [
+      {
+        id: 'issue',
+        text: 'What does the throttle feel like?',
+        options: [
+          { value: 'too_aggressive', label: 'Too Aggressive',   desc: 'Snaps or spins on tip-in' },
+          { value: 'too_dull',       label: 'Too Dull',         desc: 'Unresponsive, slow to react' },
+          { value: 'turbo_lag',      label: 'Turbo Lag',        desc: 'Boost arrives suddenly, not smoothly' },
+          { value: 'hard_to_dose',   label: 'Hard to Modulate', desc: 'Difficult to apply precise amounts' },
+        ],
+      },
+    ],
+    getRecs: getThrottleRecs,
+  },
+  {
+    id: 'aero',
+    label: 'Aero Balance',
+    icon: '◈',
+    desc: 'Aero-related issues at speed or in fast corners',
+    questions: [
+      {
+        id: 'when',
+        text: 'When does it occur?',
+        options: [
+          { value: 'high_speed',   label: 'High Speed Only',   desc: 'Only above ~150 km/h' },
+          { value: 'fast_corner',  label: 'Fast Corners',      desc: 'Sweepers or banked turns' },
+          { value: 'braking',      label: 'Braking Zone',      desc: 'Under heavy braking' },
+        ],
+      },
+      {
+        id: 'symptom',
+        text: 'What is the symptom?',
+        options: [
+          { value: 'hs_understeer',    label: 'High-Speed Understeer', desc: 'Pushes wide at speed' },
+          { value: 'rear_instability', label: 'Rear Instability',      desc: 'Rear loose at speed' },
+          { value: 'aero_stall',       label: 'Aero Stall',            desc: 'Sudden downforce loss' },
+        ],
+      },
+    ],
+    getRecs: getAeroRecs,
+  },
+  {
+    id: 'surface',
+    label: 'Surface Sensitivity',
+    icon: '≈',
+    desc: 'Kerbs, road camber or bumpy corners upsetting the car',
+    questions: [
+      {
+        id: 'issue',
+        text: 'What surface issue are you experiencing?',
+        options: [
+          { value: 'kerb_sensitivity', label: 'Kerb Sensitivity',    desc: 'Launched or destabilised over kerbs' },
+          { value: 'road_camber',      label: 'Road Camber',         desc: 'Car pulls or wanders on cambered road' },
+          { value: 'bumpy_corner',     label: 'Bumpy Corner',        desc: 'Loses grip on rough corner surface' },
+          { value: 'bottoming',        label: 'Bottoming Out',       desc: 'Suspension hits the stops' },
+        ],
+      },
+    ],
+    getRecs: getSurfaceRecs,
+  },
+)
