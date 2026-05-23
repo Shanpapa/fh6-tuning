@@ -1,7 +1,7 @@
 // ── UI ATOMS ──────────────────────────────────────────────
 // Shared across all components. Keep stateless.
 import { useState } from 'react'
-import { t, CLASS_COLORS, DT_COLORS } from '../lib/theme.js'
+import { t, CLASS_COLORS, DT_COLORS } from '../../lib/theme.js'
 
 // ── Primitives ────────────────────────────────────────────
 
