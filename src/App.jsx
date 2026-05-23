@@ -7,6 +7,7 @@ import Garage from './components/Garage/index.jsx'
 import BuildEditor from './components/BuildEditor/index.jsx'
 import Diagnostic from './components/Diagnostic/index.jsx'
 import Profile from './components/Profile/index.jsx'
+import { useIsMobile } from './lib/useIsMobile.js'
 
 // ── Confirm modal (generic) ───────────────────────────────
 function ConfirmModal({ title, message, confirmLabel, confirmVariant = 'danger', onConfirm, onCancel }) {
@@ -40,6 +41,7 @@ function ConfirmModal({ title, message, confirmLabel, confirmVariant = 'danger',
 
 // ── Top nav ───────────────────────────────────────────────
 function Nav({ tab, onTabClick, username, onSignOut, onProfile, activeCar, activeTab }) {
+  const isMobile = useIsMobile()
   const tabs = [
     { id: 'garage',  label: 'Garage'   },
     { id: 'advisor', label: 'Upgrades' },
@@ -83,7 +85,7 @@ function Nav({ tab, onTabClick, username, onSignOut, onProfile, activeCar, activ
         ))}
 
         {/* Breadcrumb — shown when in build */}
-        {activeCar && (
+        {activeCar && !isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
             <span style={{ color: t.border, fontSize: 14 }}>›</span>
             <span style={{ fontFamily: t.mono, fontSize: 11, color: t.dim }}>
@@ -114,7 +116,7 @@ function Nav({ tab, onTabClick, username, onSignOut, onProfile, activeCar, activ
           onMouseOver={e => e.currentTarget.style.borderColor = t.accent}
           onMouseOut={e => e.currentTarget.style.borderColor = t.border}
         >
-          {username}
+          {isMobile ? (username.length > 8 ? username.slice(0,8)+'…' : username) : username}
         </button>
         <Btn variant="ghost" small onClick={onSignOut}>Sign Out</Btn>
       </div>

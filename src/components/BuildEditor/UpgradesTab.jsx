@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase.js'
 import { t } from '../../lib/theme.js'
 import { Btn, Spinner, InfoTooltip } from '../UI/index.jsx'
 import { useDescriptions } from '../../lib/useDescriptions.js'
+import { useIsMobile } from '../../lib/useIsMobile.js'
 
 // ── Stat display config ───────────────────────────────────
 const STAT_SECTIONS = [
@@ -271,6 +272,7 @@ function AvailablePartsPanel({ grouped, installedIds, onToggle, descs, showToolt
 
 // ── Main UpgradesTab ──────────────────────────────────────
 export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
+  const isMobile = useIsMobile()
   const [allParts,     setAllParts]     = useState([])
   const [loading,      setLoading]      = useState(true)
   const [installedIds, setInstalledIds] = useState(
@@ -386,7 +388,7 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
         {/* LEFT — available parts */}
         <AvailablePartsPanel
           grouped={grouped}

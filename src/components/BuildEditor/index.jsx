@@ -6,6 +6,7 @@ import { Btn, Row, Modal, ClassBadge, SectionHead, Spinner, HR } from '../UI/ind
 import UpgradesTab from './UpgradesTab.jsx'
 import TuneTab from './TuneTab.jsx'
 import NotesTab from './NotesTab.jsx'
+import { useIsMobile } from '../../lib/useIsMobile.js'
 
 // ── Goal badge ─────────────────────────────────────────────
 const GOAL_COLORS = {
@@ -112,8 +113,80 @@ function NewBuildModal({ userCarId, onClose, onCreated }) {
   )
 }
 
+
+// ── Edit build modal ───────────────────────────────────────
+function EditBuildModal({ build, onClose, onSaved }) {
+  const [name, setName] = useState(build.name || '')
+  const [goal, setGoal] = useState(build.goal || 'race')
+  const [pi,   setPi]   = useState(build.target_pi ? String(build.target_pi) : '')
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const derivedClass = classFromPi(pi)
+
+  const save = async () => {
+    if (!name.trim()) { setErr('Build name required'); return }
+    if (pi && !derivedClass) { setErr('PI must be between 100 and 999'); return }
+    setLoading(true)
+    await supabase.from('builds').update({
+      name: name.trim(), goal,
+      target_class: derivedClass ?? null,
+      target_pi: pi ? parseInt(pi) : null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', build.id)
+    onSaved()
+  }
+
+  return (
+    <Modal title="Edit Build" onClose={onClose}>
+      <Row label="Build name">
+        <input
+          value={name} onChange={e => setName(e.target.value)}
+          autoFocus onKeyDown={e => e.key === 'Enter' && save()}
+          style={{
+            background: t.surf3, border: `1px solid ${t.border}`, color: t.text,
+            padding: '7px 10px', borderRadius: 4, fontSize: 14,
+            fontFamily: t.mono, width: '100%', outline: 'none',
+          }}
+        />
+      </Row>
+      <Row label="Goal">
+        <select value={goal} onChange={e => setGoal(e.target.value)}
+          style={{
+            background: t.surf3, border: `1px solid ${t.border}`, color: t.text,
+            padding: '7px 10px', borderRadius: 4, fontSize: 14,
+            fontFamily: t.mono, width: '100%', outline: 'none',
+          }}
+        >
+          {GOALS.map(g => <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>)}
+        </select>
+      </Row>
+      <Row label="Target PI">
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <input
+            type="number" value={pi} onChange={e => setPi(e.target.value)}
+            placeholder="e.g. 900" min={100} max={999}
+            style={{
+              background: t.surf3, border: `1px solid ${t.border}`, color: t.text,
+              padding: '7px 10px', borderRadius: 4, fontSize: 14,
+              fontFamily: t.mono, width: '100%', outline: 'none',
+            }}
+          />
+          {derivedClass && <div style={{ flexShrink: 0 }}><ClassBadge cls={derivedClass} /></div>}
+        </div>
+        <div style={{ fontSize: 11, color: t.dim, fontFamily: t.mono, marginTop: 4 }}>Class derived automatically from PI</div>
+      </Row>
+      {err && <div style={{ color: t.red, fontSize: 12, fontFamily: t.mono, marginBottom: 10 }}>{err}</div>}
+      <HR />
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
+        <Btn onClick={save} disabled={loading}>{loading ? '…' : 'Save'}</Btn>
+      </div>
+    </Modal>
+  )
+}
+
 // ── Build card ─────────────────────────────────────────────
-function BuildCard({ build, onClick, onDelete }) {
+function BuildCard({ build, onClick, onDelete, onEdit }) {
   const [hover, setHover] = useState(false)
   const updated = new Date(build.updated_at).toLocaleDateString('en-GB', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -152,14 +225,18 @@ function BuildCard({ build, onClick, onDelete }) {
         )}
       </div>
       <div style={{ fontSize: 12, color: t.dim, fontFamily: t.mono }}>Updated {updated}</div>
-      <button
-        onClick={e => { e.stopPropagation(); onDelete() }}
-        style={{
-          position: 'absolute', top: 10, right: 10, background: 'none', border: 'none',
-          color: t.dim, fontSize: 14, cursor: 'pointer', padding: '2px 6px', lineHeight: 1,
-        }}
-        title="Delete build"
-      >✕</button>
+      <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
+        <button
+          onClick={e => { e.stopPropagation(); onEdit() }}
+          style={{ background: 'none', border: 'none', color: t.dim, fontSize: 13, cursor: 'pointer', padding: '2px 6px', lineHeight: 1 }}
+          title="Edit build"
+        >✎</button>
+        <button
+          onClick={e => { e.stopPropagation(); onDelete() }}
+          style={{ background: 'none', border: 'none', color: t.dim, fontSize: 14, cursor: 'pointer', padding: '2px 6px', lineHeight: 1 }}
+          title="Delete build"
+        >✕</button>
+      </div>
     </div>
   )
 }
@@ -167,9 +244,12 @@ function BuildCard({ build, onClick, onDelete }) {
 // ── Builds list ────────────────────────────────────────────
 function BuildsList({ userCar, onBack, onSelectBuild }) {
   const car = userCar?.car
-  const [builds,  setBuilds]  = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showNew, setShowNew] = useState(false)
+  const [builds,     setBuilds]     = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [showNew,    setShowNew]    = useState(false)
+  const [editBuild,  setEditBuild]  = useState(null)
+  const [delConfirm, setDelConfirm] = useState(null)
+  const isMobile = useIsMobile()
 
   const load = async () => {
     setLoading(true)
@@ -183,10 +263,10 @@ function BuildsList({ userCar, onBack, onSelectBuild }) {
 
   useEffect(() => { load() }, [userCar.id])
 
-  const deleteBuild = async (id) => {
-    if (!confirm('Delete this build?')) return
-    await supabase.from('builds').delete().eq('id', id)
-    load()
+  const deleteBuild = (build) => setDelConfirm(build)
+  const confirmDelete = async () => {
+    await supabase.from('builds').delete().eq('id', delConfirm.id)
+    setDelConfirm(null); load()
   }
 
   return (
@@ -230,11 +310,13 @@ function BuildsList({ userCar, onBack, onSelectBuild }) {
         </div>
       ) : (
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12,
+          display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12,
         }}>
           {builds.map(b => (
             <BuildCard key={b.id} build={b}
-              onClick={() => onSelectBuild(b)} onDelete={() => deleteBuild(b.id)} />
+              onClick={() => onSelectBuild(b)}
+              onDelete={() => deleteBuild(b)}
+              onEdit={() => setEditBuild(b)} />
           ))}
         </div>
       )}
@@ -245,6 +327,35 @@ function BuildsList({ userCar, onBack, onSelectBuild }) {
           onClose={() => setShowNew(false)}
           onCreated={() => { setShowNew(false); load() }}
         />
+      )}
+      {editBuild && (
+        <EditBuildModal
+          build={editBuild}
+          onClose={() => setEditBuild(null)}
+          onSaved={() => { setEditBuild(null); load() }}
+        />
+      )}
+      {delConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+          zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: t.surf, border: `1px solid ${t.borderHi}`,
+            borderRadius: 8, padding: 28, width: 340,
+          }}>
+            <div style={{ fontFamily: t.head, fontSize: 18, fontWeight: 800, textTransform: 'uppercase', color: t.text, marginBottom: 10 }}>
+              Delete build?
+            </div>
+            <div style={{ fontSize: 13, fontFamily: t.mono, color: t.mid, marginBottom: 24, lineHeight: 1.6 }}>
+              "{delConfirm.name}" will be permanently deleted.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <Btn variant="ghost" onClick={() => setDelConfirm(null)}>Cancel</Btn>
+              <Btn variant="danger" onClick={confirmDelete}>Delete</Btn>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
