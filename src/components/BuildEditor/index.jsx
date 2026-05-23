@@ -254,6 +254,7 @@ function BuildEdit({ build, userCar, onBack }) {
   const car = userCar?.car
   const [tab,            setTab]           = useState('upgrades')
   const [installedParts, setInstalledParts] = useState([])
+  const [currentPi,      setCurrentPi]     = useState(build.current_pi ?? build.target_pi ?? car?.stock_pi ?? null)
 
   // Load installed parts on mount
   useEffect(() => {
@@ -286,9 +287,18 @@ function BuildEdit({ build, userCar, onBack }) {
         }}>
           {build.name}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {build.goal         && <GoalBadge goal={build.goal} />}
-          {build.target_class && <ClassBadge cls={build.target_class} pi={build.target_pi} />}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {build.goal && <GoalBadge goal={build.goal} />}
+          {(() => {
+            const displayPi  = currentPi
+            const displayCls = displayPi ? classFromPi(displayPi) : build.target_class
+            return displayCls ? <ClassBadge cls={displayCls} pi={displayPi} /> : null
+          })()}
+          {build.target_pi && currentPi && currentPi !== build.target_pi && (
+            <span style={{ fontSize: 10, fontFamily: t.mono, color: t.dim }}>
+              target {build.target_pi}
+            </span>
+          )}
         </div>
       </div>
 
@@ -316,6 +326,7 @@ function BuildEdit({ build, userCar, onBack }) {
         <UpgradesTab
           build={build} car={car}
           onPartsChange={setInstalledParts}
+          onPiChange={setCurrentPi}
         />
       )}
       {tab === 'tune' && (

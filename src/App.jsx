@@ -7,21 +7,51 @@ import Garage from './components/Garage/index.jsx'
 import BuildEditor from './components/BuildEditor/index.jsx'
 import Diagnostic from './components/Diagnostic/index.jsx'
 
+// ── Leave build confirm modal ─────────────────────────────
+function LeaveModal({ onLeave, onCancel }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+      zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: t.surf, border: `1px solid ${t.borderHi}`,
+        borderRadius: 8, padding: 28, width: 360,
+      }}>
+        <div style={{
+          fontFamily: t.head, fontSize: 20, fontWeight: 800,
+          textTransform: 'uppercase', letterSpacing: '0.06em',
+          color: t.text, marginBottom: 10,
+        }}>
+          Leave build?
+        </div>
+        <div style={{ fontSize: 13, fontFamily: t.mono, color: t.mid, marginBottom: 24, lineHeight: 1.6 }}>
+          Any unsaved changes to your upgrades or tune will be lost.
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <Btn variant="ghost" onClick={onCancel}>Stay</Btn>
+          <Btn variant="danger" onClick={onLeave}>Leave without saving</Btn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Top nav ───────────────────────────────────────────────
-function Nav({ tab, setTab, username, onSignOut }) {
+function Nav({ tab, onTabClick, username, onSignOut }) {
   const tabs = [
-    { id: 'garage',   label: 'Garage' },
-    { id: 'advisor',  label: 'Upgrades' },
-    { id: 'diag',     label: 'Diagnose' },
+    { id: 'garage',  label: 'Garage'   },
+    { id: 'advisor', label: 'Upgrades' },
+    { id: 'diag',    label: 'Diagnose' },
   ]
 
   return (
     <div style={{
       background: t.surf, borderBottom: `1px solid ${t.border}`,
-      display: 'flex', alignItems: 'center', gap: 0,
-      padding: '0 24px', height: 48, position: 'sticky', top: 0, zIndex: 50,
+      display: 'flex', alignItems: 'center',
+      padding: '0 24px', height: 48,
+      position: 'sticky', top: 0, zIndex: 50,
     }}>
-      {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 28 }}>
         <div style={{ width: 3, height: 22, background: t.accent, borderRadius: 2 }} />
         <span style={{
@@ -32,11 +62,10 @@ function Nav({ tab, setTab, username, onSignOut }) {
         </span>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: 2, flex: 1 }}>
         {tabs.map(({ id, label }) => (
           <button
-            key={id} onClick={() => setTab(id)}
+            key={id} onClick={() => onTabClick(id)}
             style={{
               background: 'none', border: 'none', padding: '0 14px', height: 48,
               fontFamily: t.mono, fontSize: 11, fontWeight: 700,
@@ -51,11 +80,8 @@ function Nav({ tab, setTab, username, onSignOut }) {
         ))}
       </div>
 
-      {/* User */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontFamily: t.mono, fontSize: 11, color: t.dim }}>
-          {username}
-        </span>
+        <span style={{ fontFamily: t.mono, fontSize: 11, color: t.dim }}>{username}</span>
         <Btn variant="ghost" small onClick={onSignOut}>Sign Out</Btn>
       </div>
     </div>
@@ -67,15 +93,14 @@ export default function App() {
   const [session,    setSession]    = useState(null)
   const [authReady,  setAuthReady]  = useState(false)
   const [tab,        setTab]        = useState('garage')
-  const [activecar,  setActiveCar]  = useState(null)  // userCar object
+  const [activeCar,  setActiveCar]  = useState(null)
+  const [pendingTab, setPendingTab] = useState(null)  // tab waiting for confirm
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session); setAuthReady(true)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s)
-    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => subscription.unsubscribe()
   }, [])
 
@@ -96,41 +121,59 @@ export default function App() {
 
   const signOut = () => {
     supabase.auth.signOut()
+    setActiveCar(null); setTab('garage')
+  }
+
+  // Nav tab click — if in a build, ask before leaving
+  const handleTabClick = (id) => {
+    if (activeCar) {
+      setPendingTab(id)   // triggers LeaveModal
+    } else {
+      setTab(id)
+    }
+  }
+
+  const confirmLeave = () => {
     setActiveCar(null)
-    setTab('garage')
+    setTab(pendingTab)
+    setPendingTab(null)
   }
 
-  const handleSelectCar = (userCar) => {
-    setActiveCar(userCar)
-  }
-
-  const handleBackToGarage = () => {
-    setActiveCar(null)
-    setTab('garage')
-  }
-
-  // If a car is selected → show BuildEditor (overrides tab)
-  if (activecar) return (
-    <>
-      <Nav tab={tab} setTab={setTab} username={username} onSignOut={signOut} />
-      <BuildEditor userCar={activecar} onBack={handleBackToGarage} />
-    </>
-  )
+  const cancelLeave = () => setPendingTab(null)
 
   return (
     <>
-      <Nav tab={tab} setTab={setTab} username={username} onSignOut={signOut} />
+      <Nav
+        tab={activeCar ? null : tab}
+        onTabClick={handleTabClick}
+        username={username}
+        onSignOut={signOut}
+      />
+
       <main>
-        {tab === 'garage' && (
-          <Garage userId={userId} onSelectCar={handleSelectCar} />
+        {activeCar ? (
+          <BuildEditor
+            userCar={activeCar}
+            onBack={() => setActiveCar(null)}
+          />
+        ) : (
+          <>
+            {tab === 'garage' && (
+              <Garage userId={userId} onSelectCar={setActiveCar} />
+            )}
+            {tab === 'advisor' && (
+              <div style={{ padding: '40px 24px', textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13 }}>
+                Upgrade Advisor — coming soon
+              </div>
+            )}
+            {tab === 'diag' && <Diagnostic />}
+          </>
         )}
-        {tab === 'advisor' && (
-          <div style={{ padding: '40px 24px', textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13 }}>
-            Upgrade Advisor — coming soon
-          </div>
-        )}
-        {tab === 'diag' && <Diagnostic />}
       </main>
+
+      {pendingTab && (
+        <LeaveModal onLeave={confirmLeave} onCancel={cancelLeave} />
+      )}
     </>
   )
 }

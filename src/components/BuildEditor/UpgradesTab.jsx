@@ -194,7 +194,7 @@ function InstalledChip({ part, onRemove }) {
 }
 
 // ── Main UpgradesTab ──────────────────────────────────────
-export default function UpgradesTab({ build, car, onPartsChange }) {
+export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
   const descs = useDescriptions()
   const [allParts,    setAllParts]    = useState([])
   const [loading,     setLoading]     = useState(true)
@@ -252,6 +252,9 @@ export default function UpgradesTab({ build, car, onPartsChange }) {
     const piDelta = installedParts.reduce((acc, p) => acc + (p.pi_change || 0), 0)
     return { baseStats: base, newStats: next, currentPi: basePi + piDelta }
   }, [car, installedParts])
+
+  // Notify parent of PI changes
+  useEffect(() => { onPiChange?.(currentPi) }, [currentPi])
 
   const toggle = (id) => {
     setInstalledIds(prev =>
