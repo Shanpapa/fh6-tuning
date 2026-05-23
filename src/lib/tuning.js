@@ -1,9 +1,9 @@
 // ── FH6 TUNING FORMULAS ───────────────────────────────────
 import { PSI, TARGET_HZ, DIFF_DEFAULTS, DEFAULT_CASTER } from './constants.js'
 
-// Damper: rebound = bump / 0.4
+// Damper: rebound = bump × 1.5 (FH6 confirmed)
 export function calcRebound(bump) {
-  return Math.round((bump / 0.4) * 10) / 10
+  return Math.round((bump * 1.5) * 10) / 10
 }
 
 // Spring rate baseline (natural frequency method)
@@ -54,7 +54,7 @@ export function getTirePressure(compound) {
 // Diff defaults
 export function getDiffDefaults(drivetrain, goal) {
   if (goal === 'drift') return DIFF_DEFAULTS.drift
-  return DIFF_DEFAULTS[drivetrain] ?? DIFF_DEFAULTS.RWD
+  return DIFF_DEFAULTS[drivetrain] ?? DIFF_DEFAULTS.RWD  // FH6 confirmed values
 }
 
 // Generate full baseline tune from build params
@@ -91,13 +91,13 @@ export function calcBaselineTune({
     rebound_f: calcRebound(bump_front),
     rebound_r: calcRebound(bump_rear),
     // Alignment
-    caster: DEFAULT_CASTER,
+    caster: DEFAULT_CASTER,  // 6.0° default
     camber_f: -1.0,
     camber_r: -0.5,
     toe_f: 0.0,
     toe_r: 0.2,
     // Aero
-    aero_balance: 0.42,   // middle of 0.40–0.45 target
+    aero_balance: 0.50,   // FH6 confirmed target ~0.50
     // Diff
     diff_accel: diff.accel ?? diff.front?.accel ?? 55,
     diff_decel: diff.decel ?? diff.front?.decel ?? 15,

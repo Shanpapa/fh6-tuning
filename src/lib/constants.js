@@ -56,19 +56,19 @@ export const TARGET_HZ = {
 export const MECH_BALANCE = { min: 0.55, max: 0.65 }
 
 // Aero balance target range
-export const AERO_BALANCE = { min: 0.40, max: 0.45 }
+export const AERO_BALANCE = { min: 0.45, max: 0.55 }  // FH6 confirmed: ~0.50 target
 
 // Default caster
-export const DEFAULT_CASTER = 7.0
+export const DEFAULT_CASTER = 6.0  // FH6 confirmed: 5.5–6.5°, above 6.0 causes snap
 
 // Diff defaults by drivetrain/goal
 export const DIFF_DEFAULTS = {
-  RWD:   { accel: 55, decel: 15 },
-  FWD:   { accel: 85, decel: 0  },
+  RWD:   { accel: 50, decel: 30 },   // FH6: 40-60% accel, 20-40% decel
+  FWD:   { accel: 25, decel: 5  },   // FH6: 20-30% accel, 0-10% decel
   AWD:   {
-    front:  { accel: 85, decel: 0  },
-    rear:   { accel: 55, decel: 15 },
-    center: { rear_pct: 75 },
+    front:  { accel: 25, decel: 5  }, // FH6 FWD values for front
+    rear:   { accel: 50, decel: 30 }, // FH6 RWD values for rear
+    center: { rear_pct: 65 },         // FH6: 60-70% rear
   },
   drift: { accel: 100, decel: 15 },
 }

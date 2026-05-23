@@ -46,15 +46,15 @@ function TuneSection({ title, descKey, descs, showTooltips, children }) {
 const EMPTY_TUNE = {
   tire_pressure_f: 1.9, tire_pressure_r: 1.9,
   camber_f: -1.0, camber_r: -0.5,
-  toe_f: 0.0,     toe_r: 0.2,
-  caster: 7.0,
+  toe_f: 0.0,     toe_r: 0.0,   // FH6: toe 0° default
+  caster: 6.0,                   // FH6: 5.5–6.5°
   spring_rate_f: 0, spring_rate_r: 0,
   bump_f: 0, bump_r: 0,
   rebound_f: 0, rebound_r: 0,
   arb_f: 5.0, arb_r: 5.0,
-  diff_accel: 55, diff_decel: 15,
+  diff_accel: 50, diff_decel: 30,  // FH6 RWD defaults
   awd_center: 75,
-  aero_front: 0, aero_rear: 0,
+  aero_front: 0, aero_rear: 0,  // balance target ~0.50
   final_drive: 3.85,
   gear_count: 6,
   gear_1: 3.20, gear_2: 2.19, gear_3: 1.59,

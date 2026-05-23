@@ -109,7 +109,7 @@ function getOversteerRecs({ when, type }) {
   if (type === 'tank_slapper') {
     recs.unshift(
       rec('TUNE',    'Rear Rebound',    'Decrease significantly',                  'Oscillation is almost always excessive rear rebound fighting itself',     0),
-      rec('TUNE',    'Rear Bump',       'Decrease to match rebound ratio',         'Check bump/rebound ratio: rebound = bump ÷ 0.4',                         0),
+      rec('TUNE',    'Rear Bump',       'Decrease to match rebound ratio',         'Check bump/rebound ratio: rebound = bump × 1.5 (FH6 confirmed)',                         0),
     )
   }
 
@@ -131,7 +131,7 @@ function getTractionRecs({ where, axle, severity }) {
 
   if (where === 'corner_exit') {
     recs.push(
-      rec('TUNE',    'Diff Accel',      'RWD: decrease to 45–50% | AWD: rebalance', 'Too much lock spins the inside rear on corner exit',                  1),
+      rec('TUNE',    'Diff Accel',      'RWD: 40–60%, decrease if spinning | FWD: 20–30%', 'Too much lock spins the inside rear on corner exit',                  1),
       rec('TUNE',    'Rear ARB',        'Soften — allow more rear grip',           'Less rear ARB roll stiffness = more rear mechanical grip on exit',       2),
       rec('TUNE',    'Rear Spring',     'Soften slightly',                         'Allows rear to compress fully, maximising contact patch under load',     3),
       rec('TUNE',    'Throttle',        'Apply later and more progressively',      'Rolling into throttle at apex vs hammering it reduces slip angle',       4),
@@ -232,7 +232,7 @@ function getDiffRecs({ issue }) {
 
   if (issue === 'awd_balance') {
     recs.push(
-      rec('TUNE',    'AWD Center Bias', 'Adjust rear %: more rear = more rotation', 'FH6 target: 70–80% rear. Below 50% = severe understeer always',        1),
+      rec('TUNE',    'AWD Center Bias', 'Adjust rear %: more rear = more rotation', 'FH6 confirmed: 60–70% rear. Below 50% = severe understeer always',        1),
       rec('TUNE',    'Front Diff Accel','Lower front accel (85→70)',               'High front lock fights steering and causes push on AWD builds',          2),
       rec('TUNE',    'Rear Diff Accel', 'Raise rear accel (55→65)',                'More rear locking helps rotation and reduces AWD push',                  3),
     )
@@ -480,7 +480,7 @@ function getSteeringRecs({ issue }) {
   if (issue === 'slow_turnin') {
     recs.push(
       rec('TUNE', 'Front Toe',       'Add toe-out (−0.1° to −0.3°)',              'Toe-out is the single biggest turn-in response tuning lever',            1),
-      rec('TUNE', 'Caster',          'Set to 7.0° (FH6 default target)',          'Correct caster improves self-centering and turn-in feel',                2),
+      rec('TUNE', 'Caster',          'Set to 5.5–6.0° (FH6 confirmed — above 6.0° causes snap on turn-in)',          'FH6: 5.5–6.0° — too high (7°+) actually causes snap oversteer on turn-in',                2),
       rec('TUNE', 'Front ARB',       'Soften slightly',                           'Stiff front ARB delays weight transfer to outer front tire',             3),
       rec('TUNE', 'Front Rebound',   'Decrease — allow faster weight transfer',   'Slow rebound delays front tire loading on corner entry',                 4),
       rec('UPGRADE', 'Front Tires',  'Upgrade compound',                          'Better front grip = faster response, especially slow-speed corners',     5),
@@ -490,7 +490,7 @@ function getSteeringRecs({ issue }) {
   if (issue === 'nervous') {
     recs.push(
       rec('TUNE', 'Front Toe',       'Reduce toe-out or add slight toe-in',       'Toe-out increases steering sensitivity — reduce for stability',          1),
-      rec('TUNE', 'Caster',          'Verify at 7.0° — too low causes twitchiness','Low caster reduces straight-line stability and self-centering',         2),
+      rec('TUNE', 'Caster',          'Verify at 7.0° — too low causes twitchiness','FH6: target 5.5–6.0°, not higher',         2),
       rec('TUNE', 'Front ARB',       'Stiffen slightly',                          'More ARB stiffness resists sudden lateral weight shifts',               3),
       rec('TUNE', 'Front Spring',    'Stiffen slightly',                          'More front spring resists rapid pitch changes that cause darting',       4),
     )
@@ -498,7 +498,7 @@ function getSteeringRecs({ issue }) {
 
   if (issue === 'self_centering') {
     recs.push(
-      rec('TUNE', 'Caster',          'Increase toward 7.0°',                      'Caster is the primary driver of self-centering force in FH6',           1),
+      rec('TUNE', 'Caster',          'Target 5.5–6.0° in FH6',                      'Caster is the primary driver of self-centering force in FH6',           1),
       rec('TUNE', 'Front Toe',       'Add slight toe-in on rear to stabilise',    'Rear toe-in improves straight-line tracking and centering feel',         2),
       rec('TUNE', 'Tire Pressure',   'Check — overinflated tires reduce feedback', 'High pressure reduces contact patch and self-centering feel',           3),
     )
