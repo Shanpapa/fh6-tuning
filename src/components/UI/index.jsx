@@ -243,13 +243,21 @@ export const SectionHead = ({ children, action }) => (
 
 // ── Info Tooltip ──────────────────────────────────────────
 export function InfoTooltip({ title, body, show = true }) {
-  const [visible, setVisible] = useState(false)
+  const [pos, setPos] = useState(null)
+  const btnRef = { current: null }
   if (!show || !body) return null
+
+  const handleEnter = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setPos({ top: rect.top, left: rect.left + rect.width / 2 })
+  }
+  const handleLeave = () => setPos(null)
+
   return (
-    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+    <div style={{ display: 'inline-flex', alignItems: 'center', position: 'relative' }}>
       <button
-        onMouseEnter={() => setVisible(true)}
-        onMouseLeave={() => setVisible(false)}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
         style={{
           background: 'none', border: `1px solid ${t.border}`, borderRadius: '50%',
           color: t.dim, width: 16, height: 16, fontSize: 9, cursor: 'pointer',
@@ -258,18 +266,20 @@ export function InfoTooltip({ title, body, show = true }) {
           transition: 'border-color 0.15s, color 0.15s',
         }}
         onMouseOver={e => { e.currentTarget.style.borderColor = t.accent; e.currentTarget.style.color = t.accent }}
-        onMouseOut={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.dim; setVisible(false) }}
+        onMouseOut={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.color = t.dim }}
       >
         i
       </button>
-      {visible && (
+      {pos && (
         <div style={{
-          position: 'absolute', bottom: '120%', left: '50%',
-          transform: 'translateX(-50%)',
+          position: 'fixed',
+          top: pos.top - 8,
+          left: Math.min(pos.left, window.innerWidth - 300),
+          transform: 'translateY(-100%)',
           background: t.surf2, border: `1px solid ${t.accent}55`,
           borderRadius: 6, padding: '10px 14px',
-          width: 280, zIndex: 300,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          width: 280, zIndex: 9999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.7)',
           pointerEvents: 'none',
         }}>
           <div style={{
@@ -279,10 +289,7 @@ export function InfoTooltip({ title, body, show = true }) {
           }}>
             {title}
           </div>
-          <div style={{
-            fontSize: 11, fontFamily: t.mono, color: t.mid,
-            lineHeight: 1.6,
-          }}>
+          <div style={{ fontSize: 11, fontFamily: t.mono, color: t.mid, lineHeight: 1.6 }}>
             {body}
           </div>
         </div>
