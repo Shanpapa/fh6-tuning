@@ -5,6 +5,7 @@ import { Btn } from './components/UI/index.jsx'
 import Login from './components/Auth/Login.jsx'
 import Garage from './components/Garage/index.jsx'
 import BuildEditor from './components/BuildEditor/index.jsx'
+import Diagnostic from './components/Diagnostic/index.jsx'
 
 // ── Top nav ───────────────────────────────────────────────
 function Nav({ tab, setTab, username, onSignOut }) {
@@ -128,11 +129,7 @@ export default function App() {
             Upgrade Advisor — coming soon
           </div>
         )}
-        {tab === 'diag' && (
-          <div style={{ padding: '40px 24px', textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13 }}>
-            Diagnostic — coming soon
-          </div>
-        )}
+        {tab === 'diag' && <Diagnostic />}
       </main>
     </>
   )
