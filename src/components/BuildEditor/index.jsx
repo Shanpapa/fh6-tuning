@@ -4,6 +4,7 @@ import { t } from '../../lib/theme.js'
 import { GOALS, classFromPi } from '../../lib/constants.js'
 import { Btn, Row, Modal, ClassBadge, SectionHead, Spinner, HR } from '../UI/index.jsx'
 import UpgradesTab from './UpgradesTab.jsx'
+import TuneTab from './TuneTab.jsx'
 
 // ── Goal badge ─────────────────────────────────────────────
 const GOAL_COLORS = {
@@ -240,7 +241,8 @@ function BuildsList({ userCar, onBack, onSelectBuild }) {
 // ── Build edit ─────────────────────────────────────────────
 function BuildEdit({ build, userCar, onBack }) {
   const car = userCar?.car
-  const [tab, setTab] = useState('upgrades')
+  const [tab,            setTab]           = useState('upgrades')
+  const [installedParts, setInstalledParts] = useState([])
 
   const TABS = [
     { id: 'upgrades', label: 'Upgrades' },
@@ -249,7 +251,6 @@ function BuildEdit({ build, userCar, onBack }) {
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 1100, margin: '0 auto' }}>
-      {/* Back */}
       <button
         onClick={onBack}
         style={{
@@ -259,7 +260,6 @@ function BuildEdit({ build, userCar, onBack }) {
         }}
       >← {car?.make} {car?.model}</button>
 
-      {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <div style={{
           fontFamily: t.head, fontSize: 24, fontWeight: 800,
@@ -273,7 +273,6 @@ function BuildEdit({ build, userCar, onBack }) {
         </div>
       </div>
 
-      {/* Tabs */}
       <div style={{
         display: 'flex', gap: 2, borderBottom: `1px solid ${t.border}`, marginBottom: 20,
       }}>
@@ -294,17 +293,17 @@ function BuildEdit({ build, userCar, onBack }) {
         ))}
       </div>
 
-      {/* Tab content */}
       {tab === 'upgrades' && (
-        <UpgradesTab build={build} car={car} />
+        <UpgradesTab
+          build={build} car={car}
+          onPartsChange={setInstalledParts}
+        />
       )}
       {tab === 'tune' && (
-        <div style={{
-          background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8,
-          padding: 32, textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13,
-        }}>
-          Tune tab — coming next
-        </div>
+        <TuneTab
+          build={build} car={car}
+          installedParts={installedParts}
+        />
       )}
     </div>
   )
