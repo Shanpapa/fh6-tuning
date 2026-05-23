@@ -241,6 +241,86 @@ export const SectionHead = ({ children, action }) => (
 )
 
 
+
+// ── Tune Slider ───────────────────────────────────────────
+export function TuneSlider({ label, value, onChange, min = 0, max = 100, step = 1, unit = '', highlight }) {
+  const pct = max === min ? 0 : ((value - min) / (max - min)) * 100
+
+  return (
+    <div style={{ width: '100%' }}>
+      {/* Label + value */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: 6,
+      }}>
+        <span style={{
+          fontSize: 11, fontFamily: t.mono, color: highlight ? t.accent : t.mid,
+          textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: highlight ? 700 : 400,
+        }}>
+          {label}
+        </span>
+        <span style={{
+          fontSize: 13, fontFamily: t.mono, fontWeight: 700,
+          color: highlight ? t.accent : t.text,
+          minWidth: 52, textAlign: 'right',
+        }}>
+          {typeof value === 'number' ? value : '—'}{unit}
+        </span>
+      </div>
+
+      {/* Slider track */}
+      <div style={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center' }}>
+        {/* Track background */}
+        <div style={{
+          position: 'absolute', left: 0, right: 0, height: 4,
+          background: t.surf3, borderRadius: 2,
+        }} />
+        {/* Fill */}
+        <div style={{
+          position: 'absolute', left: 0, width: `${pct}%`, height: 4,
+          background: highlight ? t.accent : t.mid,
+          borderRadius: 2, transition: 'width 0.05s',
+        }} />
+        {/* Native range input (invisible but functional) */}
+        <input
+          type="range"
+          min={min} max={max} step={step}
+          value={value ?? min}
+          onChange={e => onChange(parseFloat(e.target.value))}
+          style={{
+            position: 'absolute', left: 0, right: 0, width: '100%',
+            opacity: 0, cursor: 'pointer', height: 28, margin: 0,
+            WebkitAppearance: 'none',
+          }}
+        />
+        {/* Custom thumb */}
+        <div style={{
+          position: 'absolute',
+          left: `calc(${pct}% - 8px)`,
+          width: 16, height: 16, borderRadius: '50%',
+          background: highlight ? t.accent : t.text,
+          border: `2px solid ${highlight ? t.accent : t.borderHi}`,
+          boxShadow: highlight ? `0 0 6px ${t.accent}66` : '0 1px 4px rgba(0,0,0,0.4)',
+          pointerEvents: 'none',
+          transition: 'left 0.05s',
+        }} />
+      </div>
+
+      {/* LOW / HIGH labels */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', marginTop: 2,
+      }}>
+        <span style={{ fontSize: 9, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          {min}{unit}
+        </span>
+        <span style={{ fontSize: 9, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          {max}{unit}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ── Info Tooltip ──────────────────────────────────────────
 export function InfoTooltip({ title, body, show = true }) {
   const [pos, setPos] = useState(null)

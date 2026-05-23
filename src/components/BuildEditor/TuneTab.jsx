@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase.js'
 import { t } from '../../lib/theme.js'
 import { PSI, COMPOUNDS } from '../../lib/constants.js'
 import { calcBaselineTune } from '../../lib/tuning.js'
-import { Btn, HR, InfoTooltip } from '../UI/index.jsx'
+import { Btn, HR, InfoTooltip, TuneSlider } from '../UI/index.jsx'
 import { useDescriptions } from '../../lib/useDescriptions.js'
 
 function round1(n) { return Math.round(n * 10) / 10 }
@@ -185,16 +185,20 @@ export default function TuneTab({ build, car, installedParts }) {
       </div>
 
       <TuneSection title="Tires" descKey="tune_tires" descs={descs} showTooltips={showTooltips}>
-        <TuneField label="Pressure F" value={tune.tire_pressure_f} onChange={set('tire_pressure_f')} step={0.1} min={1.0} max={3.0} unit="bar" />
-        <TuneField label="Pressure R" value={tune.tire_pressure_r} onChange={set('tire_pressure_r')} step={0.1} min={1.0} max={3.0} unit="bar" />
+        <div style={{ width: '100%' }}>
+          <TuneSlider label="Pressure F" value={tune.tire_pressure_f} onChange={set('tire_pressure_f')} min={1.0} max={3.0} step={0.1} unit=" bar" />
+        </div>
+        <div style={{ width: '100%' }}>
+          <TuneSlider label="Pressure R" value={tune.tire_pressure_r} onChange={set('tire_pressure_r')} min={1.0} max={3.0} step={0.1} unit=" bar" />
+        </div>
       </TuneSection>
 
       <TuneSection title="Alignment" descKey="tune_alignment" descs={descs} showTooltips={showTooltips}>
-        <TuneField label="Camber F"  value={tune.camber_f}  onChange={set('camber_f')}  step={0.1} min={-5} max={5}  unit="°" />
-        <TuneField label="Camber R"  value={tune.camber_r}  onChange={set('camber_r')}  step={0.1} min={-5} max={5}  unit="°" />
-        <TuneField label="Toe F"     value={tune.toe_f}     onChange={set('toe_f')}     step={0.1} min={-3} max={3}  unit="°" />
-        <TuneField label="Toe R"     value={tune.toe_r}     onChange={set('toe_r')}     step={0.1} min={-3} max={3}  unit="°" />
-        <TuneField label="Caster"    value={tune.caster}    onChange={set('caster')}    step={0.1} min={1}  max={7}  unit="°" highlight />
+        <div style={{ width: '100%' }}><TuneSlider label="Camber F" value={tune.camber_f} onChange={set('camber_f')} min={-5} max={5} step={0.1} unit="°" /></div>
+        <div style={{ width: '100%' }}><TuneSlider label="Camber R" value={tune.camber_r} onChange={set('camber_r')} min={-5} max={5} step={0.1} unit="°" /></div>
+        <div style={{ width: '100%' }}><TuneSlider label="Toe F" value={tune.toe_f} onChange={set('toe_f')} min={-3} max={3} step={0.1} unit="°" /></div>
+        <div style={{ width: '100%' }}><TuneSlider label="Toe R" value={tune.toe_r} onChange={set('toe_r')} min={-3} max={3} step={0.1} unit="°" /></div>
+        <div style={{ width: '100%' }}><TuneSlider label="Caster" value={tune.caster} onChange={set('caster')} min={1} max={7} step={0.1} unit="°" highlight /></div>
       </TuneSection>
 
       <TuneSection title="Springs & Dampers" descKey="tune_springs" descs={descs} showTooltips={showTooltips}>
@@ -207,21 +211,21 @@ export default function TuneTab({ build, car, installedParts }) {
       </TuneSection>
 
       <TuneSection title="Anti-Roll Bars" descKey="tune_arb" descs={descs} showTooltips={showTooltips}>
-        <TuneField label="ARB F" value={tune.arb_f} onChange={set('arb_f')} step={0.1} min={1} max={65} />
-        <TuneField label="ARB R" value={tune.arb_r} onChange={set('arb_r')} step={0.1} min={1} max={65} />
+        <div style={{ width: '100%' }}><TuneSlider label="ARB Front" value={tune.arb_f} onChange={set('arb_f')} min={1} max={65} step={0.1} /></div>
+        <div style={{ width: '100%' }}><TuneSlider label="ARB Rear" value={tune.arb_r} onChange={set('arb_r')} min={1} max={65} step={0.1} /></div>
       </TuneSection>
 
       <TuneSection title={isAWD ? 'Differential (AWD)' : 'Differential'} descKey="tune_diff" descs={descs} showTooltips={showTooltips}>
-        <TuneField label="Accel %" value={tune.diff_accel} onChange={set('diff_accel')} step={1} min={0} max={100} unit="%" highlight />
-        <TuneField label="Decel %" value={tune.diff_decel} onChange={set('diff_decel')} step={1} min={0} max={100} unit="%" />
+        <div style={{ width: '100%' }}><TuneSlider label="Acceleration" value={tune.diff_accel} onChange={set('diff_accel')} min={0} max={100} step={1} unit="%" highlight /></div>
+        <div style={{ width: '100%' }}><TuneSlider label="Deceleration" value={tune.diff_decel} onChange={set('diff_decel')} min={0} max={100} step={1} unit="%" /></div>
         {isAWD && (
-          <TuneField label="Center rear %" value={tune.awd_center} onChange={set('awd_center')} step={1} min={50} max={100} unit="%" highlight />
+          <div style={{ width: '100%' }}><TuneSlider label="Center (rear %)" value={tune.awd_center} onChange={set('awd_center')} min={50} max={100} step={1} unit="%" highlight /></div>
         )}
       </TuneSection>
 
       <TuneSection title="Aero" descKey="tune_aero" descs={descs} showTooltips={showTooltips}>
-        <TuneField label="Front" value={tune.aero_front} onChange={set('aero_front')} step={1} min={0} max={1000} />
-        <TuneField label="Rear"  value={tune.aero_rear}  onChange={set('aero_rear')}  step={1} min={0} max={1000} />
+        <div style={{ width: '100%' }}><TuneSlider label="Front Downforce" value={tune.aero_front} onChange={set('aero_front')} min={0} max={1000} step={1} /></div>
+        <div style={{ width: '100%' }}><TuneSlider label="Rear Downforce"  value={tune.aero_rear}  onChange={set('aero_rear')}  min={0} max={1000} step={1} /></div>
       </TuneSection>
 
       <TuneSection title="Final Drive" descKey="tune_final_drive" descs={descs} showTooltips={showTooltips}>
