@@ -1,21 +1,31 @@
 // ── FH6 CONSTANTS ─────────────────────────────────────────
 
-export const CLASSES = ['D','C','B','A','S1','S2','X']
+export const CLASSES = ['D','C','B','A','S1','S2','R','X']
 
 export const CLASS_RANGES = {
-  D:  [100, 500],
-  C:  [501, 600],
-  B:  [601, 700],
-  A:  [701, 800],
-  S1: [801, 900],
-  S2: [901, 998],
-  R:  [998, 998],
+  D:  [100, 400],
+  C:  [401, 500],
+  B:  [501, 600],
+  A:  [601, 700],
+  S1: [701, 800],
+  S2: [801, 900],
+  R:  [901, 998],
   X:  [999, 9999],
+}
+
+// Derive class from PI — returns null if out of range
+export function classFromPi(pi) {
+  const n = parseInt(pi)
+  if (isNaN(n)) return null
+  for (const [cls, [min, max]] of Object.entries(CLASS_RANGES)) {
+    if (n >= min && n <= max) return cls
+  }
+  return null
 }
 
 export const DRIVETRAINS = ['RWD', 'FWD', 'AWD']
 
-export const GOALS = ['race', 'drift', 'drag', 'rally']
+export const GOALS = ['race', 'drift', 'drag', 'rally', 'hillclimb', 'offroad']
 
 // Tire pressure by compound (FH6 — one decimal only)
 export const PSI = {
@@ -58,7 +68,7 @@ export const DIFF_DEFAULTS = {
   AWD:   {
     front:  { accel: 85, decel: 0  },
     rear:   { accel: 55, decel: 15 },
-    center: { rear_pct: 75 },        // 70–80% rear
+    center: { rear_pct: 75 },
   },
   drift: { accel: 100, decel: 15 },
 }
