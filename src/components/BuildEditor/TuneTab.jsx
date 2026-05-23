@@ -16,36 +16,7 @@ function getActiveCompound(installedParts) {
   return 'street'
 }
 
-// ── Tune field ─────────────────────────────────────────────
-function TuneField({ label, value, onChange, step = 0.1, min, max, unit, highlight }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{
-        fontSize: 11, fontFamily: t.mono, color: t.mid,
-        textTransform: 'uppercase', letterSpacing: '0.1em',
-      }}>
-        {label}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <input
-          type="number" value={value ?? ''} step={step} min={min} max={max}
-          onChange={e => onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}
-          style={{
-            background: highlight ? `${t.accent}14` : t.surf3,
-            border: `1px solid ${highlight ? t.accent + '55' : t.border}`,
-            color: t.text, padding: '7px 10px', borderRadius: 4,
-            fontSize: 14, fontFamily: t.mono, width: 90, outline: 'none',
-          }}
-        />
-        {unit && (
-          <span style={{ fontSize: 12, color: t.mid, fontFamily: t.mono }}>{unit}</span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ── Tune section ───────────────────────────────────────────
+// ── Tune section wrapper ───────────────────────────────────
 function TuneSection({ title, descKey, descs, showTooltips, children }) {
   const desc = descs?.[descKey]
   return (
@@ -63,11 +34,9 @@ function TuneSection({ title, descKey, descs, showTooltips, children }) {
         }}>
           {title}
         </div>
-        {desc && (
-          <InfoTooltip title={desc.title} body={desc.body} show={showTooltips} />
-        )}
+        {desc && <InfoTooltip title={desc.title} body={desc.body} show={showTooltips} />}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         {children}
       </div>
     </div>
@@ -76,8 +45,8 @@ function TuneSection({ title, descKey, descs, showTooltips, children }) {
 
 const EMPTY_TUNE = {
   tire_pressure_f: 1.9, tire_pressure_r: 1.9,
-  camber_f: -1.0,  camber_r: -0.5,
-  toe_f: 0.0,      toe_r: 0.2,
+  camber_f: -1.0, camber_r: -0.5,
+  toe_f: 0.0,     toe_r: 0.2,
   caster: 7.0,
   spring_rate_f: 0, spring_rate_r: 0,
   bump_f: 0, bump_r: 0,
@@ -87,6 +56,10 @@ const EMPTY_TUNE = {
   awd_center: 75,
   aero_front: 0, aero_rear: 0,
   final_drive: 3.85,
+  gear_count: 6,
+  gear_1: 3.20, gear_2: 2.19, gear_3: 1.59,
+  gear_4: 1.19, gear_5: 0.91, gear_6: 0.72,
+  gear_7: null, gear_8: null, gear_9: null, gear_10: null,
 }
 
 export default function TuneTab({ build, car, installedParts }) {
@@ -97,7 +70,8 @@ export default function TuneTab({ build, car, installedParts }) {
   const [showTooltips, setShowTooltips] = useState(true)
   const descs = useDescriptions()
 
-  const isAWD = car?.stock_drivetrain === 'AWD'
+  const isAWD    = car?.stock_drivetrain === 'AWD'
+  const gearCount = tune.gear_count || 6
 
   const activeCompound = useMemo(
     () => getActiveCompound(installedParts),
@@ -148,7 +122,7 @@ export default function TuneTab({ build, car, installedParts }) {
 
   return (
     <div>
-      {/* Header bar */}
+      {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         background: t.surf2, border: `1px solid ${t.border}`,
@@ -165,7 +139,6 @@ export default function TuneTab({ build, car, installedParts }) {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Tooltip toggle */}
           <button
             onClick={() => setShowTooltips(p => !p)}
             style={{
@@ -176,7 +149,6 @@ export default function TuneTab({ build, car, installedParts }) {
               fontFamily: t.mono, cursor: 'pointer', fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '0.06em',
             }}
-            title="Toggle section descriptions"
           >
             {showTooltips ? 'ℹ ON' : 'ℹ OFF'}
           </button>
@@ -184,52 +156,100 @@ export default function TuneTab({ build, car, installedParts }) {
         </div>
       </div>
 
+      {/* ── Tires ── */}
       <TuneSection title="Tires" descKey="tune_tires" descs={descs} showTooltips={showTooltips}>
-        <div style={{ width: '100%' }}>
-          <TuneSlider label="Pressure F" value={tune.tire_pressure_f} onChange={set('tire_pressure_f')} min={1.0} max={3.0} step={0.1} unit=" bar" />
-        </div>
-        <div style={{ width: '100%' }}>
-          <TuneSlider label="Pressure R" value={tune.tire_pressure_r} onChange={set('tire_pressure_r')} min={1.0} max={3.0} step={0.1} unit=" bar" />
-        </div>
+        <TuneSlider label="Pressure Front" value={tune.tire_pressure_f} onChange={set('tire_pressure_f')} min={1.0} max={3.0} step={0.1} unit=" bar" />
+        <TuneSlider label="Pressure Rear"  value={tune.tire_pressure_r} onChange={set('tire_pressure_r')} min={1.0} max={3.0} step={0.1} unit=" bar" />
       </TuneSection>
 
+      {/* ── Alignment ── */}
       <TuneSection title="Alignment" descKey="tune_alignment" descs={descs} showTooltips={showTooltips}>
-        <div style={{ width: '100%' }}><TuneSlider label="Camber F" value={tune.camber_f} onChange={set('camber_f')} min={-5} max={5} step={0.1} unit="°" /></div>
-        <div style={{ width: '100%' }}><TuneSlider label="Camber R" value={tune.camber_r} onChange={set('camber_r')} min={-5} max={5} step={0.1} unit="°" /></div>
-        <div style={{ width: '100%' }}><TuneSlider label="Toe F" value={tune.toe_f} onChange={set('toe_f')} min={-3} max={3} step={0.1} unit="°" /></div>
-        <div style={{ width: '100%' }}><TuneSlider label="Toe R" value={tune.toe_r} onChange={set('toe_r')} min={-3} max={3} step={0.1} unit="°" /></div>
-        <div style={{ width: '100%' }}><TuneSlider label="Caster" value={tune.caster} onChange={set('caster')} min={1} max={7} step={0.1} unit="°" highlight /></div>
+        <TuneSlider label="Camber Front" value={tune.camber_f} onChange={set('camber_f')} min={-5} max={5} step={0.1} unit="°" />
+        <TuneSlider label="Camber Rear"  value={tune.camber_r} onChange={set('camber_r')} min={-5} max={5} step={0.1} unit="°" />
+        <TuneSlider label="Toe Front"    value={tune.toe_f}    onChange={set('toe_f')}    min={-3} max={3} step={0.1} unit="°" />
+        <TuneSlider label="Toe Rear"     value={tune.toe_r}    onChange={set('toe_r')}    min={-3} max={3} step={0.1} unit="°" />
+        <TuneSlider label="Caster"       value={tune.caster}   onChange={set('caster')}   min={1}  max={7} step={0.1} unit="°" highlight />
       </TuneSection>
 
+      {/* ── Springs & Dampers ── */}
       <TuneSection title="Springs & Dampers" descKey="tune_springs" descs={descs} showTooltips={showTooltips}>
-        <TuneField label="Spring F"  value={tune.spring_rate_f} onChange={set('spring_rate_f')} step={1}   min={1}  max={999} unit="N/mm" highlight />
-        <TuneField label="Spring R"  value={tune.spring_rate_r} onChange={set('spring_rate_r')} step={1}   min={1}  max={999} unit="N/mm" highlight />
-        <TuneField label="Bump F"    value={tune.bump_f}        onChange={set('bump_f')}        step={0.1} min={1}  max={20}  />
-        <TuneField label="Bump R"    value={tune.bump_r}        onChange={set('bump_r')}        step={0.1} min={1}  max={20}  />
-        <TuneField label="Rebound F" value={tune.rebound_f}     onChange={set('rebound_f')}     step={0.1} min={1}  max={20}  highlight />
-        <TuneField label="Rebound R" value={tune.rebound_r}     onChange={set('rebound_r')}     step={0.1} min={1}  max={20}  highlight />
+        <TuneSlider label="Spring Rate Front" value={tune.spring_rate_f} onChange={set('spring_rate_f')} min={1} max={999} step={1} unit=" N/mm" highlight />
+        <TuneSlider label="Spring Rate Rear"  value={tune.spring_rate_r} onChange={set('spring_rate_r')} min={1} max={999} step={1} unit=" N/mm" highlight />
+        <TuneSlider label="Bump Front"        value={tune.bump_f}        onChange={set('bump_f')}        min={1} max={20}  step={0.1} />
+        <TuneSlider label="Bump Rear"         value={tune.bump_r}        onChange={set('bump_r')}        min={1} max={20}  step={0.1} />
+        <TuneSlider label="Rebound Front"     value={tune.rebound_f}     onChange={set('rebound_f')}     min={1} max={20}  step={0.1} highlight />
+        <TuneSlider label="Rebound Rear"      value={tune.rebound_r}     onChange={set('rebound_r')}     min={1} max={20}  step={0.1} highlight />
       </TuneSection>
 
+      {/* ── ARB ── */}
       <TuneSection title="Anti-Roll Bars" descKey="tune_arb" descs={descs} showTooltips={showTooltips}>
-        <div style={{ width: '100%' }}><TuneSlider label="ARB Front" value={tune.arb_f} onChange={set('arb_f')} min={1} max={65} step={0.1} /></div>
-        <div style={{ width: '100%' }}><TuneSlider label="ARB Rear" value={tune.arb_r} onChange={set('arb_r')} min={1} max={65} step={0.1} /></div>
+        <TuneSlider label="ARB Front" value={tune.arb_f} onChange={set('arb_f')} min={1} max={65} step={0.1} />
+        <TuneSlider label="ARB Rear"  value={tune.arb_r} onChange={set('arb_r')} min={1} max={65} step={0.1} />
       </TuneSection>
 
+      {/* ── Diff ── */}
       <TuneSection title={isAWD ? 'Differential (AWD)' : 'Differential'} descKey="tune_diff" descs={descs} showTooltips={showTooltips}>
-        <div style={{ width: '100%' }}><TuneSlider label="Acceleration" value={tune.diff_accel} onChange={set('diff_accel')} min={0} max={100} step={1} unit="%" highlight /></div>
-        <div style={{ width: '100%' }}><TuneSlider label="Deceleration" value={tune.diff_decel} onChange={set('diff_decel')} min={0} max={100} step={1} unit="%" /></div>
+        <TuneSlider label="Acceleration" value={tune.diff_accel} onChange={set('diff_accel')} min={0} max={100} step={1} unit="%" highlight />
+        <TuneSlider label="Deceleration" value={tune.diff_decel} onChange={set('diff_decel')} min={0} max={100} step={1} unit="%" />
         {isAWD && (
-          <div style={{ width: '100%' }}><TuneSlider label="Center (rear %)" value={tune.awd_center} onChange={set('awd_center')} min={50} max={100} step={1} unit="%" highlight /></div>
+          <TuneSlider label="Center (rear %)" value={tune.awd_center} onChange={set('awd_center')} min={50} max={100} step={1} unit="%" highlight />
         )}
       </TuneSection>
 
+      {/* ── Aero ── */}
       <TuneSection title="Aero" descKey="tune_aero" descs={descs} showTooltips={showTooltips}>
-        <div style={{ width: '100%' }}><TuneSlider label="Front Downforce" value={tune.aero_front} onChange={set('aero_front')} min={0} max={1000} step={1} /></div>
-        <div style={{ width: '100%' }}><TuneSlider label="Rear Downforce"  value={tune.aero_rear}  onChange={set('aero_rear')}  min={0} max={1000} step={1} /></div>
+        <TuneSlider label="Front Downforce" value={tune.aero_front} onChange={set('aero_front')} min={0} max={1000} step={1} />
+        <TuneSlider label="Rear Downforce"  value={tune.aero_rear}  onChange={set('aero_rear')}  min={0} max={1000} step={1} />
       </TuneSection>
 
-      <TuneSection title="Final Drive" descKey="tune_final_drive" descs={descs} showTooltips={showTooltips}>
-        <TuneField label="Final Drive" value={tune.final_drive} onChange={set('final_drive')} step={0.01} min={1.5} max={6.0} highlight />
+      {/* ── Gearing ── */}
+      <TuneSection title="Gearing" descKey="tune_final_drive" descs={descs} showTooltips={showTooltips}>
+        <TuneSlider label="Final Drive" value={tune.final_drive} onChange={set('final_drive')} min={1.50} max={6.00} step={0.01} highlight />
+        <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 14 }}>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12,
+          }}>
+            <span style={{ fontSize: 10, color: t.dim, fontFamily: t.mono, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              Individual Gears
+            </span>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button
+                onClick={() => set('gear_count')(Math.max(1, gearCount - 1))}
+                disabled={gearCount <= 1}
+                style={{
+                  background: t.surf3, border: `1px solid ${t.border}`, color: t.text,
+                  borderRadius: 3, width: 22, height: 22, cursor: 'pointer',
+                  fontFamily: t.mono, fontSize: 14, lineHeight: 1,
+                  opacity: gearCount <= 1 ? 0.4 : 1,
+                }}
+              >−</button>
+              <span style={{ fontSize: 12, fontFamily: t.mono, color: t.mid, minWidth: 20, textAlign: 'center' }}>
+                {gearCount}
+              </span>
+              <button
+                onClick={() => set('gear_count')(Math.min(10, gearCount + 1))}
+                disabled={gearCount >= 10}
+                style={{
+                  background: t.surf3, border: `1px solid ${t.border}`, color: t.text,
+                  borderRadius: 3, width: 22, height: 22, cursor: 'pointer',
+                  fontFamily: t.mono, fontSize: 14, lineHeight: 1,
+                  opacity: gearCount >= 10 ? 0.4 : 1,
+                }}
+              >+</button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {Array.from({ length: gearCount }, (_, i) => i + 1).map(n => (
+              <TuneSlider
+                key={n}
+                label={`Gear ${n}`}
+                value={tune[`gear_${n}`] ?? null}
+                onChange={set(`gear_${n}`)}
+                min={0.50} max={5.00} step={0.01}
+              />
+            ))}
+          </div>
+        </div>
       </TuneSection>
 
       <HR />

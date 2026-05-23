@@ -244,7 +244,21 @@ export const SectionHead = ({ children, action }) => (
 
 // ── Tune Slider ───────────────────────────────────────────
 export function TuneSlider({ label, value, onChange, min = 0, max = 100, step = 1, unit = '', highlight }) {
-  const pct = max === min ? 0 : ((value - min) / (max - min)) * 100
+  const [editing,  setEditing]  = useState(false)
+  const [inputVal, setInputVal] = useState('')
+
+  const pct     = max === min ? 0 : Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
+  const display = typeof value === 'number' ? value : '—'
+
+  const startEdit = () => {
+    setInputVal(String(value ?? ''))
+    setEditing(true)
+  }
+  const commitEdit = () => {
+    const n = parseFloat(inputVal)
+    if (!isNaN(n)) onChange(Math.min(max, Math.max(min, parseFloat(n.toFixed(String(step).includes('.') ? String(step).split('.')[1].length : 0)))))
+    setEditing(false)
+  }
 
   return (
     <div style={{ width: '100%' }}>
@@ -259,32 +273,50 @@ export function TuneSlider({ label, value, onChange, min = 0, max = 100, step = 
         }}>
           {label}
         </span>
-        <span style={{
-          fontSize: 13, fontFamily: t.mono, fontWeight: 700,
-          color: highlight ? t.accent : t.text,
-          minWidth: 52, textAlign: 'right',
-        }}>
-          {typeof value === 'number' ? value : '—'}{unit}
-        </span>
+        {editing ? (
+          <input
+            autoFocus
+            type="number" value={inputVal} step={step} min={min} max={max}
+            onChange={e => setInputVal(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false) }}
+            style={{
+              background: t.surf3, border: `1px solid ${t.accent}`,
+              color: t.text, borderRadius: 3, padding: '2px 6px',
+              fontSize: 13, fontFamily: t.mono, fontWeight: 700,
+              width: 72, textAlign: 'right', outline: 'none',
+            }}
+          />
+        ) : (
+          <span
+            onClick={startEdit}
+            title="Click to type exact value"
+            style={{
+              fontSize: 13, fontFamily: t.mono, fontWeight: 700,
+              color: highlight ? t.accent : t.text,
+              minWidth: 52, textAlign: 'right', cursor: 'text',
+              borderBottom: `1px dashed ${t.border}`,
+              paddingBottom: 1,
+            }}
+          >
+            {display}{unit}
+          </span>
+        )}
       </div>
 
       {/* Slider track */}
       <div style={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center' }}>
-        {/* Track background */}
         <div style={{
           position: 'absolute', left: 0, right: 0, height: 4,
           background: t.surf3, borderRadius: 2,
         }} />
-        {/* Fill */}
         <div style={{
           position: 'absolute', left: 0, width: `${pct}%`, height: 4,
           background: highlight ? t.accent : t.mid,
           borderRadius: 2, transition: 'width 0.05s',
         }} />
-        {/* Native range input (invisible but functional) */}
         <input
-          type="range"
-          min={min} max={max} step={step}
+          type="range" min={min} max={max} step={step}
           value={value ?? min}
           onChange={e => onChange(parseFloat(e.target.value))}
           style={{
@@ -293,7 +325,6 @@ export function TuneSlider({ label, value, onChange, min = 0, max = 100, step = 
             WebkitAppearance: 'none',
           }}
         />
-        {/* Custom thumb */}
         <div style={{
           position: 'absolute',
           left: `calc(${pct}% - 8px)`,
@@ -306,10 +337,8 @@ export function TuneSlider({ label, value, onChange, min = 0, max = 100, step = 
         }} />
       </div>
 
-      {/* LOW / HIGH labels */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', marginTop: 2,
-      }}>
+      {/* MIN / MAX labels */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
         <span style={{ fontSize: 9, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {min}{unit}
         </span>
