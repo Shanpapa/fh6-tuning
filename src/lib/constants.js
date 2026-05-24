@@ -25,7 +25,27 @@ export function classFromPi(pi) {
 
 export const DRIVETRAINS = ['RWD', 'FWD', 'AWD']
 
-export const GOALS = ['race', 'drift', 'drag', 'rally', 'hillclimb', 'offroad']
+export const GOALS = ['race_circuit', 'race_sprint', 'drift', 'drag', 'rally', 'offroad']
+
+// Display names + descriptions for each goal
+export const GOAL_INFO = {
+  race_circuit: { label: 'Race — Circuit', short: 'Circuit', desc: 'Closed track, corners & braking' },
+  race_sprint:  { label: 'Race — Sprint',  short: 'Sprint',  desc: 'Open road, top speed & power' },
+  drift:        { label: 'Drift',          short: 'Drift',   desc: 'Sustained controllable slides' },
+  drag:         { label: 'Drag',           short: 'Drag',    desc: 'Straight-line launch & speed' },
+  rally:        { label: 'Rally',          short: 'Rally',   desc: 'Mixed surface, dirt & tarmac' },
+  offroad:      { label: 'Off-Road',       short: 'Offroad', desc: 'Rough terrain, max traction' },
+}
+
+// Badge colors per goal
+export const GOAL_COLORS = {
+  race_circuit: '#38bdf8',
+  race_sprint:  '#0ea5e9',
+  drift:        '#f97316',
+  drag:         '#a78bfa',
+  rally:        '#4ade80',
+  offroad:      '#f87171',
+}
 
 // Tire pressure by compound (FH6 — one decimal only)
 export const PSI = {

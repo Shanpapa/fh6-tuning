@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { t } from '../../lib/theme.js'
-import { GOALS, classFromPi } from '../../lib/constants.js'
+import { GOALS, GOAL_INFO, GOAL_COLORS, classFromPi } from '../../lib/constants.js'
 import { Btn, Row, Modal, ClassBadge, SectionHead, Spinner, HR } from '../UI/index.jsx'
 import UpgradesTab from './UpgradesTab.jsx'
 import TuneTab from './TuneTab.jsx'
@@ -9,20 +9,16 @@ import NotesTab from './NotesTab.jsx'
 import { useIsMobile } from '../../lib/useIsMobile.js'
 
 // ── Goal badge ─────────────────────────────────────────────
-const GOAL_COLORS = {
-  race: '#38bdf8', drift: '#f97316', drag: '#a78bfa',
-  rally: '#4ade80', hillclimb: '#fbbf24', offroad: '#f87171',
-}
-
 function GoalBadge({ goal }) {
   const color = GOAL_COLORS[goal] ?? t.dim
+  const label = GOAL_INFO[goal]?.short ?? goal
   return (
     <span style={{
       background: `${color}18`, border: `1px solid ${color}44`,
       borderRadius: 3, padding: '2px 8px', fontSize: 11, fontFamily: t.mono,
       color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
     }}>
-      {goal}
+      {label}
     </span>
   )
 }
@@ -77,7 +73,7 @@ function NewBuildModal({ userCarId, onClose, onCreated }) {
           }}
         >
           {GOALS.map(g => (
-            <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>
+            <option key={g} value={g}>{GOAL_INFO[g]?.label ?? g}</option>
           ))}
         </select>
       </Row>
@@ -157,7 +153,7 @@ function EditBuildModal({ build, onClose, onSaved }) {
             fontFamily: t.mono, width: '100%', outline: 'none',
           }}
         >
-          {GOALS.map(g => <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>)}
+          {GOALS.map(g => <option key={g} value={g}>{GOAL_INFO[g]?.label ?? g}</option>)}
         </select>
       </Row>
       <Row label="Target PI">

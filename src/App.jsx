@@ -7,6 +7,7 @@ import Garage from './components/Garage/index.jsx'
 import BuildEditor from './components/BuildEditor/index.jsx'
 import Diagnostic from './components/Diagnostic/index.jsx'
 import Profile from './components/Profile/index.jsx'
+import Advisor from './components/Advisor/index.jsx'
 import { useIsMobile } from './lib/useIsMobile.js'
 
 // ── Confirm modal (generic) ───────────────────────────────
@@ -44,7 +45,7 @@ function Nav({ tab, onTabClick, username, onSignOut, onProfile, activeCar, activ
   const isMobile = useIsMobile()
   const tabs = [
     { id: 'garage',  label: 'Garage'   },
-    { id: 'advisor', label: 'Upgrades' },
+    { id: 'advisor', label: 'Advisor' },
     { id: 'diag',    label: 'Diagnose' },
   ]
 
@@ -219,9 +220,7 @@ export default function App() {
               <Garage userId={userId} onSelectCar={setActiveCar} showConfirm={showConfirm} />
             )}
             {tab === 'advisor' && (
-              <div style={{ padding: '40px 24px', textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13 }}>
-                Upgrade Advisor — coming soon
-              </div>
+              <Advisor userId={userId} />
             )}
             {tab === 'diag' && <Diagnostic />}
           </>
