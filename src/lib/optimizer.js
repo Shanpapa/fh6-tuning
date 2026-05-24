@@ -159,3 +159,72 @@ export function optimize(parts, weights, piCap, isXClass = false) {
 
   return { selected, totalPi, totalScore, breakdown }
 }
+
+// ── Analyze an existing build vs optimal ──────────────────
+// userParts: the parts the user actually installed (array of car_parts rows)
+// allParts: full catalog for the car
+// weights, piCap, isXClass: same as optimize()
+//
+// returns {
+//   userScore, userPi, optimal: {selected,totalPi,totalScore,breakdown},
+//   comparison: [{ subcat, userPart, optimalPart, userScore, optimalScore, delta, piDelta, status }]
+//   missingSubcats: [...]   // subcats where optimal installs something user didn't
+// }
+export function analyzeBuild(userParts, allParts, weights, piCap, isXClass = false) {
+  const optimal = optimize(allParts, weights, piCap, isXClass)
+
+  // Score user's actual selection
+  const userScore = (userParts || []).reduce((acc, p) => acc + scorePart(p, weights), 0)
+  const userPi    = (userParts || []).reduce((acc, p) => acc + (p.pi_change || 0), 0)
+
+  // Build subcategory maps
+  const subcatOf = (p) => p.subcategory || p.category || 'Other'
+  const userBySub    = {}
+  const optimalBySub = {}
+  ;(userParts || []).forEach(p => { userBySub[subcatOf(p)] = p })
+  optimal.breakdown.forEach(b => { optimalBySub[b.subcat] = b.part })
+
+  // Union of all subcategories touched by either
+  const allSubcats = new Set([
+    ...Object.keys(userBySub),
+    ...Object.keys(optimalBySub),
+  ])
+
+  const comparison = []
+  allSubcats.forEach(subcat => {
+    const userPart    = userBySub[subcat] || null
+    const optimalPart = optimalBySub[subcat] || null
+    const uScore = userPart    ? scorePart(userPart, weights)    : 0
+    const oScore = optimalPart ? scorePart(optimalPart, weights) : 0
+    const uPi    = userPart?.pi_change    || 0
+    const oPi    = optimalPart?.pi_change || 0
+
+    let status
+    if (userPart && optimalPart && userPart.id === optimalPart.id) status = 'optimal'
+    else if (!userPart && optimalPart)  status = 'missing'      // optimal adds something
+    else if (userPart && !optimalPart)  status = 'extra'        // user has, optimal skips
+    else status = 'suboptimal'                                  // both have, different
+
+    comparison.push({
+      subcat, userPart, optimalPart,
+      userScore: uScore, optimalScore: oScore,
+      delta: oScore - uScore,
+      piDelta: oPi - uPi,
+      status,
+    })
+  })
+
+  // Sort: problems first (biggest improvement potential), then optimal
+  comparison.sort((a, b) => {
+    if (a.status === 'optimal' && b.status !== 'optimal') return 1
+    if (b.status === 'optimal' && a.status !== 'optimal') return -1
+    return b.delta - a.delta
+  })
+
+  return {
+    userScore, userPi,
+    optimal,
+    comparison,
+    potential: optimal.totalScore - userScore,
+  }
+}

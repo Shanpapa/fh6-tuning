@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { t } from '../../lib/theme.js'
 import { GOALS, GOAL_INFO, GOAL_COLORS, classFromPi } from '../../lib/constants.js'
-import { optimize } from '../../lib/optimizer.js'
+import { optimize, analyzeBuild } from '../../lib/optimizer.js'
 import { useGoalWeights } from '../../lib/useGoalWeights.js'
 import { useIsMobile } from '../../lib/useIsMobile.js'
 import {
@@ -357,45 +357,322 @@ function ResultStep({ car, goal, piCap, result, onSave, saving, savedMsg, onRest
   )
 }
 
+// ── Mode selector (entry) ─────────────────────────────────
+function ModeSelect({ onPick }) {
+  const [hover, setHover] = useState(null)
+  const cards = [
+    { id: 'new',     title: 'New Build',       desc: 'Pick a car, goal and PI cap — the optimizer builds it from scratch' },
+    { id: 'analyze', title: 'Analyze Existing', desc: 'Check one of your builds — see where you can improve it' },
+  ]
+  return (
+    <div>
+      <SectionHead>Build Advisor</SectionHead>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+        {cards.map(c => (
+          <div key={c.id}
+            onClick={() => onPick(c.id)}
+            onMouseEnter={() => setHover(c.id)}
+            onMouseLeave={() => setHover(null)}
+            style={{
+              background: t.surf, border: `1px solid ${hover === c.id ? t.accent : t.border}`,
+              borderRadius: 8, padding: '20px 18px', cursor: 'pointer', transition: 'border-color 0.15s',
+            }}>
+            <div style={{
+              fontFamily: t.head, fontSize: 20, fontWeight: 800, color: t.text,
+              textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6,
+            }}>
+              {c.title}
+            </div>
+            <div style={{ fontSize: 12, fontFamily: t.mono, color: t.dim, lineHeight: 1.5 }}>
+              {c.desc}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Build picker (analyze mode) ───────────────────────────
+function BuildPickStep({ userId, onPick }) {
+  const [builds,  setBuilds]  = useState([])
+  const [loading, setLoading] = useState(true)
+  const [hover,   setHover]   = useState(null)
+
+  useEffect(() => {
+    supabase.from('builds')
+      .select('*, user_car:user_cars!inner(id, user_id, car:cars(*))')
+      .eq('user_car.user_id', userId)
+      .order('updated_at', { ascending: false })
+      .then(({ data }) => { setBuilds(data || []); setLoading(false) })
+  }, [userId])
+
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}><Spinner /></div>
+  )
+
+  if (builds.length === 0) return (
+    <div>
+      <SectionHead>Analyze Existing Build</SectionHead>
+      <div style={{
+        background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8,
+        padding: 40, textAlign: 'center', color: t.dim, fontFamily: t.mono, fontSize: 13,
+      }}>
+        You have no builds yet — create one in your Garage first.
+      </div>
+    </div>
+  )
+
+  return (
+    <div>
+      <SectionHead>Select a Build to Analyze</SectionHead>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+        {builds.map(b => {
+          const car = b.user_car?.car
+          return (
+            <div key={b.id}
+              onClick={() => onPick(b, car)}
+              onMouseEnter={() => setHover(b.id)}
+              onMouseLeave={() => setHover(null)}
+              style={{
+                background: t.surf, border: `1px solid ${hover === b.id ? t.accent : t.border}`,
+                borderRadius: 6, padding: '14px 16px', cursor: 'pointer', transition: 'border-color 0.15s',
+              }}>
+              <div style={{ fontSize: 12, color: t.dim, fontFamily: t.mono }}>
+                {car?.make} {car?.model}
+              </div>
+              <div style={{
+                fontFamily: t.head, fontSize: 18, fontWeight: 700, color: t.text,
+                textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8,
+              }}>
+                {b.name}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {b.goal && <GoalBadge goal={b.goal} />}
+                {b.current_pi && <ClassBadge cls={classFromPi(b.current_pi) || b.target_class} pi={b.current_pi} />}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Analysis target PI input ──────────────────────────────
+function AnalyzeSetupStep({ build, car, onRun }) {
+  const [goal, setGoal] = useState(build.goal || null)
+  const [piOverride, setPiOverride] = useState('')
+  const buildPi = build.current_pi || build.target_pi || 0
+
+  const effectiveCap = piOverride ? parseInt(piOverride) : buildPi
+  const derivedClass = classFromPi(effectiveCap)
+  const canRun = goal && effectiveCap > 0
+
+  return (
+    <div>
+      <SectionHead>Analyze Setup</SectionHead>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ fontFamily: t.head, fontSize: 18, color: t.text, textTransform: 'uppercase' }}>
+          {car?.make} {car?.model}
+        </span>
+        <span style={{ fontSize: 13, fontFamily: t.mono, color: t.accent }}>{build.name}</span>
+      </div>
+
+      {/* Goal — only ask if build has none */}
+      {!build.goal && (
+        <Row label="Goal (build has none set)">
+          <select value={goal || ''} onChange={e => setGoal(e.target.value)}
+            style={{
+              background: t.surf3, border: `1px solid ${t.border}`, color: goal ? t.text : t.dim,
+              padding: '8px 12px', borderRadius: 4, fontSize: 14, fontFamily: t.mono,
+              width: '100%', outline: 'none',
+            }}>
+            <option value="">Select goal</option>
+            {GOALS.map(g => <option key={g} value={g}>{GOAL_INFO[g].label}</option>)}
+          </select>
+        </Row>
+      )}
+      {build.goal && (
+        <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span style={{ fontSize: 11, fontFamily: t.mono, color: t.dim }}>Goal:</span>
+          <GoalBadge goal={build.goal} />
+        </div>
+      )}
+
+      <Row label="PI cap for comparison (optional)">
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <input type="number" value={piOverride} onChange={e => setPiOverride(e.target.value)}
+            placeholder={String(buildPi)} min={100} max={999}
+            style={{
+              background: t.surf3, border: `1px solid ${t.border}`, color: t.text,
+              padding: '8px 12px', borderRadius: 4, fontSize: 16, fontFamily: t.mono,
+              width: 140, outline: 'none',
+            }} />
+          {derivedClass && <ClassBadge cls={derivedClass} />}
+          {effectiveCap >= 999 && !derivedClass && <ClassBadge cls="X" />}
+        </div>
+        <div style={{ fontSize: 11, color: t.dim, fontFamily: t.mono, marginTop: 6, lineHeight: 1.5 }}>
+          Leave empty to compare against your build's current PI ({buildPi}) — "did I maximise this budget?".
+          Set a higher target to see what to add with the extra room.
+        </div>
+      </Row>
+
+      <HR />
+      <Btn onClick={() => onRun(goal, effectiveCap)} disabled={!canRun} full>
+        ⚡ Analyze Build
+      </Btn>
+    </div>
+  )
+}
+
+// ── Analysis result (comparison) ──────────────────────────
+const STATUS_META = {
+  optimal:    { color: '#4ade80', icon: '✓', label: 'Optimal' },
+  suboptimal: { color: '#fbbf24', icon: '↗', label: 'Better available' },
+  missing:    { color: '#f87171', icon: '+', label: 'Missing' },
+  extra:      { color: '#71717a', icon: '−', label: 'Optimal skips' },
+}
+
+function AnalysisResult({ car, goal, cap, analysis, onRestart }) {
+  const isX = cap >= 999
+  const optimalCount = analysis.comparison.filter(c => c.status === 'optimal').length
+  const totalSubs = analysis.comparison.length
+
+  return (
+    <div>
+      {/* Header + score summary */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontFamily: t.head, fontSize: 22, fontWeight: 800, color: t.text, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          {car?.make} {car?.model}
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 6, alignItems: 'center' }}>
+          <GoalBadge goal={goal} />
+          <span style={{ fontSize: 11, fontFamily: t.mono, color: t.dim }}>
+            comparison cap: {isX ? 'X (999+)' : cap}
+          </span>
+        </div>
+      </div>
+
+      {/* Score bars */}
+      <div style={{ background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
+          {[
+            { label: 'Your build',    value: analysis.userScore,            color: t.text },
+            { label: 'Optimal',       value: analysis.optimal.totalScore,   color: t.accent },
+            { label: 'Potential gain', value: analysis.potential,           color: analysis.potential > 0.5 ? t.green : t.dim, prefix: '+' },
+          ].map(s => (
+            <div key={s.label}>
+              <div style={{ fontSize: 10, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
+                {s.label}
+              </div>
+              <div style={{ fontFamily: t.head, fontSize: 26, fontWeight: 800, color: s.color }}>
+                {s.prefix || ''}{s.value.toFixed(0)}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, fontFamily: t.mono, color: t.mid }}>
+          {optimalCount} of {totalSubs} subcategories optimal · Your PI: {analysis.userPi}
+        </div>
+      </div>
+
+      {/* Per-subcategory comparison */}
+      <div style={{ background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8, padding: 16 }}>
+        <div style={{ fontSize: 12, fontFamily: t.mono, color: t.mid, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+          Per Subcategory
+        </div>
+        {analysis.comparison.map((c, i) => {
+          const meta = STATUS_META[c.status]
+          return (
+            <div key={i} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '10px 0', borderBottom: `1px solid ${t.border}22`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{
+                  width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                  background: `${meta.color}22`, color: meta.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 900,
+                }}>
+                  {meta.icon}
+                </span>
+                <div>
+                  <div style={{ fontSize: 12, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {c.subcat}
+                  </div>
+                  {c.status === 'optimal' ? (
+                    <div style={{ fontSize: 13, fontFamily: t.mono, color: t.text }}>
+                      {c.userPart?.name}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 13, fontFamily: t.mono, color: t.text }}>
+                      {c.userPart?.name || '(none)'}
+                      <span style={{ color: t.dim, margin: '0 6px' }}>→</span>
+                      <span style={{ color: meta.color }}>{c.optimalPart?.name || '(remove)'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {c.status !== 'optimal' && c.delta > 0.5 && (
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: 12, fontFamily: t.mono, color: t.green, fontWeight: 700 }}>
+                    +{c.delta.toFixed(0)} pts
+                  </div>
+                  <div style={{ fontSize: 10, fontFamily: t.mono, color: c.piDelta > 0 ? t.red : t.green }}>
+                    {c.piDelta > 0 ? `+${c.piDelta}` : c.piDelta} PI
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <Btn variant="ghost" onClick={onRestart}>← Start Over</Btn>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Advisor ───────────────────────────────────────────
 export default function Advisor({ userId }) {
+  const [mode,    setMode]    = useState(null)   // null | 'new' | 'analyze'
   const [step,    setStep]    = useState(0)
   const [car,     setCar]     = useState(null)
   const [goal,    setGoal]    = useState(null)
   const [piCap,   setPiCap]   = useState(null)
-  const [parts,   setParts]   = useState([])
   const [result,  setResult]  = useState(null)
   const [saving,  setSaving]  = useState(false)
   const [savedMsg,setSavedMsg]= useState(false)
+  // analyze-specific
+  const [pickedBuild, setPickedBuild] = useState(null)
+  const [analysis,    setAnalysis]    = useState(null)
   const { loading: weightsLoading, weights } = useGoalWeights()
 
+  // ── New build flow ──
   const runOptimize = async (cap) => {
     setPiCap(cap)
-    // Load parts for this car
     const { data } = await supabase.from('car_parts').select('*').eq('car_id', car.id)
     const carParts = data || []
-    setParts(carParts)
     const goalWeights = weights[goal] || { stats: {}, unlocks: {} }
-    const isX = cap >= 999
-    const r = optimize(carParts, goalWeights, cap, isX)
+    const r = optimize(carParts, goalWeights, cap, cap >= 999)
     setResult(r)
     setStep(3)
   }
 
   const saveAsBuild = async () => {
     setSaving(true)
-    // Ensure car is in user's garage
     let { data: existing } = await supabase.from('user_cars')
       .select('id').eq('user_id', userId).eq('car_id', car.id).maybeSingle()
-
     let userCarId = existing?.id
     if (!userCarId) {
       const { data: newUC } = await supabase.from('user_cars')
         .insert({ user_id: userId, car_id: car.id }).select('id').single()
       userCarId = newUC.id
     }
-
-    // Create build
     const isX = piCap >= 999
     await supabase.from('builds').insert({
       user_car_id: userCarId,
@@ -406,14 +683,25 @@ export default function Advisor({ userId }) {
       current_pi: result.totalPi,
       installed_parts: result.selected.map(p => p.id),
     })
-
     setSaving(false); setSavedMsg(true)
     setTimeout(() => setSavedMsg(false), 3000)
   }
 
+  // ── Analyze flow ──
+  const runAnalysis = async (analyzeGoal, cap) => {
+    setGoal(analyzeGoal); setPiCap(cap)
+    const { data: allParts } = await supabase.from('car_parts').select('*').eq('car_id', car.id)
+    const installedIds = Array.isArray(pickedBuild.installed_parts) ? pickedBuild.installed_parts : []
+    const userParts = (allParts || []).filter(p => installedIds.includes(p.id))
+    const goalWeights = weights[analyzeGoal] || { stats: {}, unlocks: {} }
+    const a = analyzeBuild(userParts, allParts || [], goalWeights, cap, cap >= 999)
+    setAnalysis(a)
+    setStep(3)
+  }
+
   const restart = () => {
-    setStep(0); setCar(null); setGoal(null); setPiCap(null)
-    setParts([]); setResult(null); setSavedMsg(false)
+    setMode(null); setStep(0); setCar(null); setGoal(null); setPiCap(null)
+    setResult(null); setSavedMsg(false); setPickedBuild(null); setAnalysis(null)
   }
 
   if (weightsLoading) return (
@@ -422,16 +710,47 @@ export default function Advisor({ userId }) {
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 860, margin: '0 auto' }}>
-      <Steps current={step} />
-      {step === 0 && <CarStep onSelect={c => { setCar(c); setStep(1) }} />}
-      {step === 1 && car && <GoalStep car={car} onSelect={g => { setGoal(g); setStep(2) }} />}
-      {step === 2 && car && goal && <PiStep car={car} goal={goal} onSubmit={runOptimize} />}
-      {step === 3 && result && (
-        <ResultStep
-          car={car} goal={goal} piCap={piCap} result={result}
-          onSave={saveAsBuild} saving={saving} savedMsg={savedMsg}
-          onRestart={restart}
-        />
+      {/* Mode entry */}
+      {!mode && <ModeSelect onPick={m => { setMode(m); setStep(0) }} />}
+
+      {/* ── NEW BUILD FLOW ── */}
+      {mode === 'new' && (
+        <>
+          <Steps current={step} />
+          {step === 0 && <CarStep onSelect={c => { setCar(c); setStep(1) }} />}
+          {step === 1 && car && <GoalStep car={car} onSelect={g => { setGoal(g); setStep(2) }} />}
+          {step === 2 && car && goal && <PiStep car={car} goal={goal} onSubmit={runOptimize} />}
+          {step === 3 && result && (
+            <ResultStep
+              car={car} goal={goal} piCap={piCap} result={result}
+              onSave={saveAsBuild} saving={saving} savedMsg={savedMsg}
+              onRestart={restart}
+            />
+          )}
+        </>
+      )}
+
+      {/* ── ANALYZE FLOW ── */}
+      {mode === 'analyze' && (
+        <>
+          {step === 0 && (
+            <BuildPickStep userId={userId}
+              onPick={(b, c) => { setPickedBuild(b); setCar(c); setStep(1) }} />
+          )}
+          {step === 1 && pickedBuild && car && (
+            <AnalyzeSetupStep build={pickedBuild} car={car} onRun={runAnalysis} />
+          )}
+          {step === 3 && analysis && (
+            <AnalysisResult car={car} goal={goal} cap={piCap} analysis={analysis} onRestart={restart} />
+          )}
+        </>
+      )}
+
+      {/* Back to mode select */}
+      {mode && step === 0 && (
+        <div style={{ marginTop: 20 }}>
+          <Btn variant="ghost" onClick={restart}>← Back</Btn>
+        </div>
       )}
     </div>
   )
