@@ -534,10 +534,11 @@ const STATUS_META = {
   extra:      { color: '#71717a', icon: '−', label: 'Optimal skips' },
 }
 
-function AnalysisResult({ car, goal, cap, analysis, onRestart }) {
+function AnalysisResult({ car, goal, cap, analysis, onRestart, onOverwrite, onSaveNew, saving, savedMsg }) {
   const isX = cap >= 999
   const optimalCount = analysis.comparison.filter(c => c.status === 'optimal').length
   const totalSubs = analysis.comparison.length
+  const hasImprovement = analysis.potential > 0.5
 
   return (
     <div>
@@ -630,8 +631,23 @@ function AnalysisResult({ car, goal, cap, analysis, onRestart }) {
         })}
       </div>
 
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <Btn variant="ghost" onClick={onRestart}>← Start Over</Btn>
+        {hasImprovement && (
+          <>
+            <Btn variant="ghost" onClick={onOverwrite} disabled={!!saving}>
+              {saving === 'overwrite' ? '…' : savedMsg === 'overwrite' ? '✓ Updated' : '↻ Overwrite build'}
+            </Btn>
+            <Btn onClick={onSaveNew} disabled={!!saving}>
+              {saving === 'new' ? '…' : savedMsg === 'new' ? '✓ Saved' : '+ Save as new build'}
+            </Btn>
+          </>
+        )}
+        {!hasImprovement && (
+          <span style={{ fontSize: 12, fontFamily: t.mono, color: t.green }}>
+            ✓ Build is already optimal
+          </span>
+        )}
       </div>
     </div>
   )
@@ -648,8 +664,10 @@ export default function Advisor({ userId }) {
   const [saving,  setSaving]  = useState(false)
   const [savedMsg,setSavedMsg]= useState(false)
   // analyze-specific
-  const [pickedBuild, setPickedBuild] = useState(null)
-  const [analysis,    setAnalysis]    = useState(null)
+  const [pickedBuild,  setPickedBuild]  = useState(null)
+  const [analysis,     setAnalysis]     = useState(null)
+  const [analyzeSaving,setAnalyzeSaving]= useState(null)  // 'overwrite'|'new'|null
+  const [analyzeSaved, setAnalyzeSaved] = useState(null)  // 'overwrite'|'new'|null
   const { loading: weightsLoading, weights } = useGoalWeights()
 
   // ── New build flow ──
@@ -699,9 +717,48 @@ export default function Advisor({ userId }) {
     setStep(3)
   }
 
+  const saveOptimalToExisting = async () => {
+    setAnalyzeSaving('overwrite')
+    await supabase.from('builds').update({
+      installed_parts: analysis.optimal.selected.map(p => p.id),
+      current_pi: analysis.optimal.totalPi,
+      goal: goal,
+      updated_at: new Date().toISOString(),
+    }).eq('id', pickedBuild.id)
+    setAnalyzeSaving(null); setAnalyzeSaved('overwrite')
+    setTimeout(() => setAnalyzeSaved(null), 3000)
+  }
+
+  const saveOptimalAsNew = async () => {
+    setAnalyzeSaving('new')
+    // Ensure car in garage
+    let { data: existing } = await supabase.from('user_cars')
+      .select('id').eq('user_id', userId).eq('car_id', car.id).maybeSingle()
+    let userCarId = existing?.id
+    if (!userCarId) {
+      const { data: newUC } = await supabase.from('user_cars')
+        .insert({ user_id: userId, car_id: car.id }).select('id').single()
+      userCarId = newUC.id
+    }
+    const isX = piCap >= 999
+    const clsLabel = isX ? 'X' : classFromPi(analysis.optimal.totalPi) || piCap
+    await supabase.from('builds').insert({
+      user_car_id: userCarId,
+      name: `${pickedBuild.name} — Optimized`,
+      goal,
+      target_class: isX ? 'X' : classFromPi(piCap),
+      target_pi: piCap,
+      current_pi: analysis.optimal.totalPi,
+      installed_parts: analysis.optimal.selected.map(p => p.id),
+    })
+    setAnalyzeSaving(null); setAnalyzeSaved('new')
+    setTimeout(() => setAnalyzeSaved(null), 3000)
+  }
+
   const restart = () => {
     setMode(null); setStep(0); setCar(null); setGoal(null); setPiCap(null)
     setResult(null); setSavedMsg(false); setPickedBuild(null); setAnalysis(null)
+    setAnalyzeSaving(null); setAnalyzeSaved(null)
   }
 
   if (weightsLoading) return (
@@ -741,7 +798,14 @@ export default function Advisor({ userId }) {
             <AnalyzeSetupStep build={pickedBuild} car={car} onRun={runAnalysis} />
           )}
           {step === 3 && analysis && (
-            <AnalysisResult car={car} goal={goal} cap={piCap} analysis={analysis} onRestart={restart} />
+            <AnalysisResult
+              car={car} goal={goal} cap={piCap} analysis={analysis}
+              onRestart={restart}
+              onOverwrite={saveOptimalToExisting}
+              onSaveNew={saveOptimalAsNew}
+              saving={analyzeSaving}
+              savedMsg={analyzeSaved}
+            />
           )}
         </>
       )}
