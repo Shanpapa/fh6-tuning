@@ -34,11 +34,17 @@ export default function Profile({ session, onBack }) {
       // Stats
       const { count: cars } = await supabase
         .from('user_cars').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
-      const { count: builds } = await supabase
-        .from('builds')
-        .select('*, user_cars!inner(user_id)', { count: 'exact', head: true })
-        .eq('user_cars.user_id', user.id)
-      setStats({ cars: cars || 0, builds: builds || 0 })
+      // Get user_car IDs, then count builds for those cars
+      const { data: ucIds } = await supabase
+        .from('user_cars').select('id').eq('user_id', user.id)
+      let buildCount = 0
+      if (ucIds?.length) {
+        const { count } = await supabase
+          .from('builds').select('*', { count: 'exact', head: true })
+          .in('user_car_id', ucIds.map(u => u.id))
+        buildCount = count || 0
+      }
+      setStats({ cars: cars || 0, builds: buildCount })
       setLoading(false)
     }
     load()

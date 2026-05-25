@@ -54,7 +54,15 @@ export function getTirePressure(compound) {
 // Diff defaults
 export function getDiffDefaults(drivetrain, goal) {
   if (goal === 'drift') return DIFF_DEFAULTS.drift
+  // Handle legacy 'race' goal + new goal keys — all non-drift use drivetrain defaults
   return DIFF_DEFAULTS[drivetrain] ?? DIFF_DEFAULTS.RWD  // FH6 confirmed values
+}
+
+// Normalise old goal values to new 6-key system
+export function normaliseGoal(goal) {
+  if (!goal) return 'race_circuit'
+  if (goal === 'race' || goal === 'hillclimb') return 'race_circuit'
+  return goal
 }
 
 // Generate full baseline tune from build params
@@ -95,7 +103,7 @@ export function calcBaselineTune({
     camber_f: -1.0,
     camber_r: -0.5,
     toe_f: 0.0,
-    toe_r: 0.2,
+    toe_r: 0.0,  // FH6: 0° default
     // Aero
     aero_balance: 0.50,   // FH6 confirmed target ~0.50
     // Diff

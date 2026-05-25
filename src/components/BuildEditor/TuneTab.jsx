@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { t } from '../../lib/theme.js'
 import { PSI, COMPOUNDS } from '../../lib/constants.js'
-import { calcBaselineTune } from '../../lib/tuning.js'
+import { calcBaselineTune, normaliseGoal } from '../../lib/tuning.js'
 import { Btn, HR, InfoTooltip, TuneSlider } from '../UI/index.jsx'
 import { useDescriptions } from '../../lib/useDescriptions.js'
 
@@ -46,11 +46,11 @@ function TuneSection({ title, descKey, descs, showTooltips, children }) {
 const EMPTY_TUNE = {
   tire_pressure_f: 1.9, tire_pressure_r: 1.9,
   camber_f: -1.0, camber_r: -0.5,
-  toe_f: 0.0,     toe_r: 0.0,   // FH6: toe 0° default
+  toe_f: 0.0,     toe_r: 0.0,
   caster: 6.0,                   // FH6: 5.5–6.5°
-  spring_rate_f: 0, spring_rate_r: 0,
-  bump_f: 0, bump_r: 0,
-  rebound_f: 0, rebound_r: 0,
+  spring_rate_f: 1, spring_rate_r: 1,  // min value so slider doesn't go negative
+  bump_f: 1.0, bump_r: 1.0,
+  rebound_f: 1.5, rebound_r: 1.5,
   arb_f: 5.0, arb_r: 5.0,
   diff_accel: 50, diff_decel: 30,  // FH6 RWD defaults
   awd_center: 75,
@@ -102,7 +102,7 @@ export default function TuneTab({ build, car, installedParts }) {
       weight_kg, front_pct, pi,
       compound: activeCompound,
       drivetrain, stock_drivetrain: drivetrain,
-      power_hp, goal: build.goal || 'race',
+      power_hp, goal: normaliseGoal(build.goal),
     })
 
     setTune(prev => ({ ...prev, ...baseline }))

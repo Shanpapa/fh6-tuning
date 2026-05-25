@@ -400,11 +400,27 @@ function BuildPickStep({ userId, onPick }) {
   const [hover,   setHover]   = useState(null)
 
   useEffect(() => {
-    supabase.from('builds')
-      .select('*, user_car:user_cars!inner(id, user_id, car:cars(*))')
-      .eq('user_car.user_id', userId)
-      .order('updated_at', { ascending: false })
-      .then(({ data }) => { setBuilds(data || []); setLoading(false) })
+    // Get user's user_car IDs first, then fetch builds
+    supabase.from('user_cars')
+      .select('id, car:cars(*)')
+      .eq('user_id', userId)
+      .then(async ({ data: userCars }) => {
+        if (!userCars?.length) { setBuilds([]); setLoading(false); return }
+        const ucIds = userCars.map(uc => uc.id)
+        const { data: buildsData } = await supabase.from('builds')
+          .select('*')
+          .in('user_car_id', ucIds)
+          .order('updated_at', { ascending: false })
+        // Attach car info
+        const ucMap = {}
+        userCars.forEach(uc => { ucMap[uc.id] = uc })
+        const enriched = (buildsData || []).map(b => ({
+          ...b,
+          user_car: ucMap[b.user_car_id] || null,
+        }))
+        setBuilds(enriched)
+        setLoading(false)
+      })
   }, [userId])
 
   if (loading) return (
@@ -668,17 +684,20 @@ export default function Advisor({ userId }) {
   const [analysis,     setAnalysis]     = useState(null)
   const [analyzeSaving,setAnalyzeSaving]= useState(null)  // 'overwrite'|'new'|null
   const [analyzeSaved, setAnalyzeSaved] = useState(null)  // 'overwrite'|'new'|null
+  const [error,        setError]        = useState(null)
   const { loading: weightsLoading, weights } = useGoalWeights()
 
   // ── New build flow ──
   const runOptimize = async (cap) => {
-    setPiCap(cap)
+    setPiCap(cap); setError(null)
+    try {
     const { data } = await supabase.from('car_parts').select('*').eq('car_id', car.id)
     const carParts = data || []
     const goalWeights = weights[goal] || { stats: {}, unlocks: {} }
     const r = optimize(carParts, goalWeights, cap, cap >= 999)
     setResult(r)
     setStep(3)
+    } catch(e) { setError('Failed to load parts: ' + e.message) }
   }
 
   const saveAsBuild = async () => {
@@ -707,7 +726,8 @@ export default function Advisor({ userId }) {
 
   // ── Analyze flow ──
   const runAnalysis = async (analyzeGoal, cap) => {
-    setGoal(analyzeGoal); setPiCap(cap)
+    setGoal(analyzeGoal); setPiCap(cap); setError(null)
+    try {
     const { data: allParts } = await supabase.from('car_parts').select('*').eq('car_id', car.id)
     const installedIds = Array.isArray(pickedBuild.installed_parts) ? pickedBuild.installed_parts : []
     const userParts = (allParts || []).filter(p => installedIds.includes(p.id))
@@ -715,6 +735,7 @@ export default function Advisor({ userId }) {
     const a = analyzeBuild(userParts, allParts || [], goalWeights, cap, cap >= 999)
     setAnalysis(a)
     setStep(3)
+    } catch(e) { setError('Analysis failed: ' + e.message) }
   }
 
   const saveOptimalToExisting = async () => {
@@ -758,7 +779,7 @@ export default function Advisor({ userId }) {
   const restart = () => {
     setMode(null); setStep(0); setCar(null); setGoal(null); setPiCap(null)
     setResult(null); setSavedMsg(false); setPickedBuild(null); setAnalysis(null)
-    setAnalyzeSaving(null); setAnalyzeSaved(null)
+    setAnalyzeSaving(null); setAnalyzeSaved(null); setError(null)
   }
 
   if (weightsLoading) return (
@@ -767,6 +788,18 @@ export default function Advisor({ userId }) {
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 860, margin: '0 auto' }}>
+      {error && (
+        <div style={{
+          background: `${t.red}14`, border: `1px solid ${t.red}44`,
+          borderRadius: 6, padding: '10px 16px', marginBottom: 16,
+          fontSize: 12, fontFamily: t.mono, color: t.red,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          {error}
+          <button onClick={() => setError(null)}
+            style={{ background: 'none', border: 'none', color: t.red, cursor: 'pointer', fontSize: 14 }}>✕</button>
+        </div>
+      )}
       {/* Mode entry */}
       {!mode && <ModeSelect onPick={m => { setMode(m); setStep(0) }} />}
 
