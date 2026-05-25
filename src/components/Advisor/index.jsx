@@ -8,6 +8,7 @@ import { useIsMobile } from '../../lib/useIsMobile.js'
 import {
   Btn, Row, Autocomplete, ClassBadge, DtBadge, Spinner, HR, SectionHead,
 } from '../UI/index.jsx'
+import StatRadar from '../UI/StatRadar.jsx'
 
 // ── Goal badge ─────────────────────────────────────────────
 function GoalBadge({ goal }) {
@@ -214,10 +215,24 @@ function PiStep({ onSubmit, car, goal }) {
 
 // ── Step 4: Result ─────────────────────────────────────────
 const STAT_LABELS = {
-  power_hp: 'Power', torque_nm: 'Torque', weight_kg: 'Weight',
-  top_speed_kmh: 'Top Speed', stat_speed: 'Speed', stat_handling: 'Handling',
-  stat_acceleration: 'Acceleration', stat_launch: 'Launch',
-  stat_braking: 'Braking', stat_offroad: 'Off-Road',
+  // Car stats
+  power_hp:       'Power',
+  torque_nm:      'Torque',
+  weight_kg:      'Weight',
+  displacement_l: 'Displacement',
+  top_speed_kmh:  'Top Speed',
+  accel_0_100:    '0–100 km/h',
+  accel_0_97:     '0–97 km/h',
+  accel_0_161:    '0–161 km/h',
+  brake_dist_97:  'Brake 97→0',
+  brake_dist_161: 'Brake 161→0',
+  // PI Ratings (0–10 scale, shown with suffix)
+  stat_speed:        'Speed (PI)',
+  stat_handling:     'Handling (PI)',
+  stat_acceleration: 'Acceleration (PI)',
+  stat_launch:       'Launch (PI)',
+  stat_braking:      'Braking (PI)',
+  stat_offroad:      'Off-Road (PI)',
 }
 
 function ResultStep({ car, goal, piCap, result, onSave, saving, savedMsg, onRestart }) {
@@ -323,6 +338,13 @@ function ResultStep({ car, goal, piCap, result, onSave, saving, savedMsg, onRest
         <div style={{ background: t.surf, border: `1px solid ${t.border}`, borderRadius: 8, padding: 16 }}>
           <div style={{ fontSize: 12, fontFamily: t.mono, color: t.mid, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
             Projected Stats
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <StatRadar
+              base={car?.base_stats}
+              current={statTotals ? Object.fromEntries(Object.entries(statTotals).map(([k,v]) => [k, v.final])) : null}
+              size={180}
+            />
           </div>
           {Object.entries(STAT_LABELS).map(([k, label]) => {
             const s = statTotals[k]
@@ -592,6 +614,28 @@ function AnalysisResult({ car, goal, cap, analysis, onRestart, onOverwrite, onSa
         <div style={{ fontSize: 12, fontFamily: t.mono, color: t.mid }}>
           {optimalCount} of {totalSubs} subcategories optimal · Your PI: {analysis.userPi}
         </div>
+        {/* Radar chart */}
+        {(() => {
+          const aggStats = (parts) => {
+            const out = {}
+            ;(parts || []).forEach(p => {
+              Object.entries(p?.effects || {}).forEach(([k, v]) => {
+                if (k.startsWith('stat_') && typeof v === 'number') out[k] = (out[k] || 0) + v
+              })
+            })
+            return Object.keys(out).length ? out : null
+          }
+          const userParts    = analysis.comparison.filter(c => c.userPart).map(c => c.userPart)
+          const optimalParts = analysis.comparison.filter(c => c.optimalPart).map(c => c.optimalPart)
+          const baseStats    = aggStats(userParts)
+          const newStats     = aggStats(optimalParts)
+          if (!baseStats && !newStats) return null
+          return (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+              <StatRadar base={baseStats} current={newStats} size={200} />
+            </div>
+          )
+        })()}
       </div>
 
       {/* Per-subcategory comparison */}

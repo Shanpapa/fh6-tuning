@@ -2,33 +2,46 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase.js'
 import { t } from '../../lib/theme.js'
 import { Btn, Spinner, InfoTooltip } from '../UI/index.jsx'
+import StatRadar from '../UI/StatRadar.jsx'
 import { useDescriptions } from '../../lib/useDescriptions.js'
 import { useIsMobile } from '../../lib/useIsMobile.js'
 
 // ── Stat display config ───────────────────────────────────
 const STAT_SECTIONS = [
   {
-    label: 'Performance',
+    label: 'Car Stats',
     stats: [
-      { key: 'power_hp',       label: 'Power',      unit: 'hp',   lowerBetter: false },
-      { key: 'torque_nm',      label: 'Torque',     unit: 'Nm',   lowerBetter: false },
-      { key: 'weight_kg',      label: 'Weight',     unit: 'kg',   lowerBetter: true  },
-      { key: 'top_speed_kmh',  label: 'Top Speed',  unit: 'km/h', lowerBetter: false },
-      { key: 'accel_0_97',     label: '0–97 km/h',  unit: 's',    lowerBetter: true  },
-      { key: 'accel_0_161',    label: '0–161 km/h', unit: 's',    lowerBetter: true  },
-      { key: 'brake_dist_97',  label: 'Brake 97→0', unit: 'm',    lowerBetter: true  },
-      { key: 'brake_dist_161', label: 'Brake 161→0',unit: 'm',    lowerBetter: true  },
+      { key: 'power_hp',       label: 'Power',         unit: 'hp',   lowerBetter: false },
+      { key: 'torque_nm',      label: 'Torque',        unit: 'Nm',   lowerBetter: false },
+      { key: 'weight_kg',      label: 'Weight',        unit: 'kg',   lowerBetter: true  },
+      { key: 'displacement_l', label: 'Displacement',  unit: 'L',    lowerBetter: false },
+      { key: 'top_speed_kmh',  label: 'Top Speed',     unit: 'km/h', lowerBetter: false },
+      { key: 'accel_0_100',    label: '0–100 km/h',    unit: 's',    lowerBetter: true  },
+      { key: 'accel_0_97',     label: '0–97 km/h',     unit: 's',    lowerBetter: true  },
+      { key: 'accel_0_161',    label: '0–161 km/h',    unit: 's',    lowerBetter: true  },
+      { key: 'brake_dist_97',  label: 'Brake 97→0',    unit: 'm',    lowerBetter: true  },
+      { key: 'brake_dist_161', label: 'Brake 161→0',   unit: 'm',    lowerBetter: true  },
+      { key: 'lateral_g_97',   label: 'Lateral G 97',  unit: 'G',    lowerBetter: false },
+      { key: 'lateral_g_193',  label: 'Lateral G 193', unit: 'G',    lowerBetter: false },
     ],
   },
   {
-    label: 'In-Game Ratings',
+    label: 'PI Ratings (0–10)',
     stats: [
-      { key: 'stat_speed',        label: 'Speed',        unit: '', lowerBetter: false },
-      { key: 'stat_handling',     label: 'Handling',     unit: '', lowerBetter: false },
-      { key: 'stat_acceleration', label: 'Acceleration', unit: '', lowerBetter: false },
-      { key: 'stat_launch',       label: 'Launch',       unit: '', lowerBetter: false },
-      { key: 'stat_braking',      label: 'Braking',      unit: '', lowerBetter: false },
-      { key: 'stat_offroad',      label: 'Off-Road',     unit: '', lowerBetter: false },
+      { key: 'stat_speed',        label: 'Speed (PI)',        unit: '', lowerBetter: false },
+      { key: 'stat_handling',     label: 'Handling (PI)',     unit: '', lowerBetter: false },
+      { key: 'stat_acceleration', label: 'Acceleration (PI)', unit: '', lowerBetter: false },
+      { key: 'stat_launch',       label: 'Launch (PI)',       unit: '', lowerBetter: false },
+      { key: 'stat_braking',      label: 'Braking (PI)',      unit: '', lowerBetter: false },
+      { key: 'stat_offroad',      label: 'Off-Road (PI)',     unit: '', lowerBetter: false },
+    ],
+  },
+  {
+    label: 'Aero & Balance',
+    stats: [
+      { key: 'aero_efficiency', label: 'Aero Efficiency', unit: '', lowerBetter: false },
+      { key: 'aero_balance',    label: 'Aero Balance',    unit: '', lowerBetter: false },
+      { key: 'mech_balance',    label: 'Mech. Balance',   unit: '', lowerBetter: false },
     ],
   },
 ]
@@ -427,7 +440,7 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
             </div>
           </div>
 
-          {/* Stat changes */}
+          {/* Radar + Stat changes */}
           <div style={{
             background: t.surf, border: `1px solid ${t.border}`,
             borderRadius: 8, padding: 16,
@@ -435,9 +448,12 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
           }}>
             <div style={{
               fontSize: 12, fontFamily: t.mono, color: t.mid,
-              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10,
+              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12,
             }}>
               Stat Changes
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <StatRadar base={baseStats} current={newStats} size={190} />
             </div>
             {STAT_SECTIONS.map(sec => (
               <div key={sec.label} style={{ marginBottom: 14 }}>
