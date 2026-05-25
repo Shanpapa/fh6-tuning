@@ -452,10 +452,38 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
             }}>
               Stat Changes
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <StatRadar base={baseStats} current={newStats} size={190} />
+            {/* Radar + PI ratings side by side */}
+            <div style={{ display: 'flex', gap: 14, marginBottom: 16, alignItems: 'flex-start' }}>
+              <div style={{ flexShrink: 0 }}>
+                <StatRadar base={baseStats} current={newStats} size={170} />
+              </div>
+              {/* PI Ratings column */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {STAT_SECTIONS.filter(s => s.label.includes('PI')).map(sec => (
+                  <div key={sec.label}>
+                    <div style={{
+                      fontSize: 10, fontFamily: t.mono, color: t.accent,
+                      textTransform: 'uppercase', letterSpacing: '0.12em',
+                      marginBottom: 6, paddingBottom: 3,
+                      borderBottom: `1px solid ${t.border}`,
+                    }}>
+                      {sec.label}
+                    </div>
+                    {sec.stats.map(({ key, label, unit, lowerBetter }) => (
+                      <StatRow
+                        key={key} label={label}
+                        base={baseStats[key] ?? null}
+                        newVal={newStats[key] ?? baseStats[key] ?? null}
+                        unit={unit} lowerBetter={lowerBetter}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-            {STAT_SECTIONS.map(sec => (
+
+            {/* Other stat sections below */}
+            {STAT_SECTIONS.filter(s => !s.label.includes('PI')).map(sec => (
               <div key={sec.label} style={{ marginBottom: 14 }}>
                 <div style={{
                   fontSize: 10, fontFamily: t.mono, color: t.accent,
