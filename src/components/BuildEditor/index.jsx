@@ -220,7 +220,19 @@ function BuildCard({ build, onClick, onDelete, onEdit }) {
           </span>
         )}
       </div>
-      <div style={{ fontSize: 12, color: t.dim, fontFamily: t.mono }}>Updated {updated}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+        <div style={{ fontSize: 11, color: t.dim, fontFamily: t.mono }}>Updated {updated}</div>
+        {build.notes && (
+          <span style={{
+            fontSize: 10, fontFamily: t.mono, color: t.mid,
+            background: t.surf3, border: `1px solid ${t.border}`,
+            borderRadius: 3, padding: '1px 6px',
+            textTransform: 'uppercase', letterSpacing: '0.08em',
+          }}>
+            📝 notes
+          </span>
+        )}
+      </div>
       <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
         <button
           onClick={e => { e.stopPropagation(); onEdit() }}

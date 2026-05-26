@@ -8,10 +8,16 @@ import { useDescriptions } from '../../lib/useDescriptions.js'
 
 function round1(n) { return Math.round(n * 10) / 10 }
 
-function getActiveCompound(installedParts) {
+function getActiveCompound(installedParts, carStockCompound) {
+  // 1. Check installed tire parts first
   for (const p of (installedParts || [])) {
     const ct = p.effects?.compound_type
     if (ct && COMPOUNDS.includes(ct)) return ct
+  }
+  // 2. Fall back to car's stock compound from tyre_compound_stock column
+  if (carStockCompound) {
+    const slug = carStockCompound.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+    if (COMPOUNDS.includes(slug)) return slug
   }
   return 'street'
 }
@@ -74,8 +80,8 @@ export default function TuneTab({ build, car, installedParts }) {
   const gearCount = tune.gear_count || 6
 
   const activeCompound = useMemo(
-    () => getActiveCompound(installedParts),
-    [installedParts]
+    () => getActiveCompound(installedParts, car?.tyre_compound_stock),
+    [installedParts, car?.tyre_compound_stock]
   )
 
   const set = (key) => (val) => {
@@ -94,7 +100,9 @@ export default function TuneTab({ build, car, installedParts }) {
 
     const power_hp  = round1((base.power_hp  || 200) + (effects.power_hp  || 0))
     const weight_kg = round1((base.weight_kg || 1400) + (effects.weight_kg || 0))
-    const front_pct = base.mech_balance || 0.52
+    // front_weight_pct is a direct car column (e.g. 54 = 54%), not in base_stats
+    const rawFront = car?.front_weight_pct
+    const front_pct = rawFront ? (rawFront > 1 ? rawFront / 100 : rawFront) : 0.52
     const pi        = build.target_pi || car?.stock_pi || 500
     const drivetrain = car?.stock_drivetrain || 'RWD'
 
@@ -105,7 +113,9 @@ export default function TuneTab({ build, car, installedParts }) {
       power_hp, goal: normaliseGoal(build.goal),
     })
 
-    setTune(prev => ({ ...prev, ...baseline }))
+    // Don't overwrite gear_count — user may have set it manually
+    const { gear_count, ...baselineWithoutGears } = baseline
+    setTune(prev => ({ ...prev, ...baselineWithoutGears }))
     setGenMsg(`Generated · ${activeCompound} · ${power_hp} hp · ${weight_kg} kg`)
     setSaved(false)
     setTimeout(() => setGenMsg(''), 5000)

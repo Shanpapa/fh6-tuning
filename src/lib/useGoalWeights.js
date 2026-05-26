@@ -4,6 +4,11 @@ import { supabase } from './supabase.js'
 // Cache weights across mounts (they rarely change)
 let _cache = null
 
+// Clear cache on logout
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') _cache = null
+})
+
 // Returns { loading, weights } where weights[goal] = { stats:{}, unlocks:{} }
 export function useGoalWeights() {
   const [weights, setWeights] = useState(_cache)

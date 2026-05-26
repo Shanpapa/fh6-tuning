@@ -3,6 +3,11 @@ import { supabase } from './supabase.js'
 
 let _cache = null
 
+// Clear cache on logout so next user gets fresh data
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') _cache = null
+})
+
 export function useDescriptions() {
   const [descs, setDescs] = useState(_cache || {})
 
