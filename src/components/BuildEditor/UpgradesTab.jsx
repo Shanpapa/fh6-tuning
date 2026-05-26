@@ -444,7 +444,7 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
           <div style={{
             background: t.surf, border: `1px solid ${t.border}`,
             borderRadius: 8, padding: 16,
-            overflowY: 'auto', maxHeight: 'calc(100vh - 480px)',
+            overflowY: 'auto', maxHeight: 'calc(100vh - 480px)', minHeight: 200,
           }}>
             <div style={{
               fontSize: 12, fontFamily: t.mono, color: t.mid,

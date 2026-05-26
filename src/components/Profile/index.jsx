@@ -27,7 +27,7 @@ export default function Profile({ session, onBack }) {
       setLoading(true)
       // Profile
       const { data: profile } = await supabase
-        .from('profiles').select('username, bio').eq('id', user.id).single()
+        .from('profiles').select('username, bio').eq('id', user.id).maybeSingle()
       setUsername(profile?.username || user.user_metadata?.username || '')
       setBio(profile?.bio || '')
 

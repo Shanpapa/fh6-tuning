@@ -42,10 +42,10 @@ function RecCard({ rec, index }) {
               {rec.param}
             </span>
           </div>
-          <div style={{ fontSize: 13, fontFamily: t.mono, color: t.text, marginBottom: 6 }}>
+          <div style={{ fontSize: 13, fontFamily: t.mono, color: t.text, marginBottom: 6, wordBreak: 'break-word', lineHeight: 1.5 }}>
             → {rec.action}
           </div>
-          <div style={{ fontSize: 11, fontFamily: t.mono, color: t.dim, fontStyle: 'italic', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, fontFamily: t.mono, color: t.dim, fontStyle: 'italic', lineHeight: 1.5, wordBreak: 'break-word' }}>
             {rec.why}
           </div>
         </div>

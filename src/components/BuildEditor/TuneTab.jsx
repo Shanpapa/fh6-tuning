@@ -167,6 +167,19 @@ export default function TuneTab({ build, car, installedParts }) {
       </div>
 
       {/* ── Tires ── */}
+      {/* Warning if baseline not generated yet */}
+      {(tune.spring_rate_f <= 1 && tune.spring_rate_r <= 1) && (
+        <div style={{
+          background: `${t.yellow}14`, border: `1px solid ${t.yellow}44`,
+          borderRadius: 6, padding: '10px 16px', marginBottom: 12,
+          fontSize: 12, fontFamily: t.mono, color: t.yellow,
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span>⚠</span>
+          <span>No baseline generated yet — click <strong>⚡ Generate Baseline</strong> to calculate starting values from your car data.</span>
+        </div>
+      )}
+
       <TuneSection title="Tires" descKey="tune_tires" descs={descs} showTooltips={showTooltips}>
         <TuneSlider label="Pressure Front" value={tune.tire_pressure_f} onChange={set('tire_pressure_f')} min={1.0} max={3.0} step={0.1} unit=" bar" />
         <TuneSlider label="Pressure Rear"  value={tune.tire_pressure_r} onChange={set('tire_pressure_r')} min={1.0} max={3.0} step={0.1} unit=" bar" />

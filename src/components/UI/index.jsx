@@ -248,6 +248,10 @@ export function TuneSlider({ label, value, onChange, min = 0, max = 100, step = 
   const [inputVal, setInputVal] = useState('')
 
   const pct     = max === min ? 0 : Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100))
+  // For negative-range sliders: fill from zero-point, not from left edge
+  const zeroPos  = min < 0 && max > 0 ? (-min / (max - min)) * 100 : 0
+  const fillLeft  = zeroPos > 0 ? Math.min(pct, zeroPos) : 0
+  const fillWidth = zeroPos > 0 ? Math.abs(pct - zeroPos) : pct
   const display = typeof value === 'number' ? value : '—'
 
   const startEdit = () => {
@@ -311,10 +315,19 @@ export function TuneSlider({ label, value, onChange, min = 0, max = 100, step = 
           background: t.surf3, borderRadius: 2,
         }} />
         <div style={{
-          position: 'absolute', left: 0, width: `${pct}%`, height: 4,
+          position: 'absolute', left: `${fillLeft}%`, width: `${fillWidth}%`, height: 4,
           background: highlight ? t.accent : t.mid,
-          borderRadius: 2, transition: 'width 0.05s',
+          borderRadius: 2, transition: 'left 0.05s, width 0.05s',
         }} />
+        {/* Zero marker line for bipolar sliders */}
+        {zeroPos > 0 && (
+          <div style={{
+            position: 'absolute', left: `${zeroPos}%`,
+            width: 2, height: 10, background: t.border,
+            borderRadius: 1, transform: 'translateX(-50%)',
+            pointerEvents: 'none',
+          }} />
+        )}
         <input
           type="range" min={min} max={max} step={step}
           value={value ?? min}
