@@ -100,9 +100,15 @@ export default function TuneTab({ build, car, installedParts }) {
 
     const power_hp  = round1((base.power_hp  || 200) + (effects.power_hp  || 0))
     const weight_kg = round1((base.weight_kg || 1400) + (effects.weight_kg || 0))
-    // front_weight_pct is a direct car column (e.g. 54 = 54%), not in base_stats
+    // front_weight_pct: base from car column + delta from installed parts effects
     const rawFront = car?.front_weight_pct
-    const front_pct = rawFront ? (rawFront > 1 ? rawFront / 100 : rawFront) : 0.52
+    const baseFront = rawFront ? (rawFront > 1 ? rawFront / 100 : rawFront) : 0.52
+    const frontDelta = (installedParts || []).reduce((acc, p) => {
+      const v = p.effects?.front_weight_pct
+      return typeof v === 'number' ? acc + v : acc
+    }, 0)
+    // delta is in % points (e.g. -2 means 2% forward), convert to fraction
+    const front_pct = Math.max(0.3, Math.min(0.7, baseFront + frontDelta / 100))
     const pi        = build.target_pi || car?.stock_pi || 500
     const drivetrain = car?.stock_drivetrain || 'RWD'
 

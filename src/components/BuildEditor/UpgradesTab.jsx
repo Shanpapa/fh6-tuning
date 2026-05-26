@@ -17,6 +17,7 @@ const STAT_SECTIONS = [
       { key: 'displacement_l', label: 'Displacement',  unit: 'L',    lowerBetter: false },
       { key: 'top_speed_kmh',  label: 'Top Speed',     unit: 'km/h', lowerBetter: false },
       { key: 'accel_0_100',    label: '0–100 km/h',    unit: 's',    lowerBetter: true  },
+      { key: 'front_weight_pct', label: 'Front Weight',   unit: '%',    lowerBetter: false },
       { key: 'accel_0_97',     label: '0–97 km/h',     unit: 's',    lowerBetter: true  },
       { key: 'accel_0_161',    label: '0–161 km/h',    unit: 's',    lowerBetter: true  },
       { key: 'brake_dist_97',  label: 'Brake 97→0',    unit: 'm',    lowerBetter: true  },
