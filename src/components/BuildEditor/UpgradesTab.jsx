@@ -77,19 +77,19 @@ function StatRow({ label, base, newVal, unit, lowerBetter }) {
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '5px 0', borderBottom: `1px solid ${t.border}22`,
+      padding: '7px 0', borderBottom: `1px solid ${t.border}33`,
     }}>
-      <span style={{ fontSize: 12, color: t.dim, fontFamily: t.mono }}>{label}</span>
+      <span style={{ fontSize: 13, color: t.mid, fontFamily: t.mono }}>{label}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {hasDelta ? (
           <>
-            <span style={{ fontSize: 12, color: t.mid,  fontFamily: t.mono }}>{fmtVal(base, unit)}</span>
+            <span style={{ fontSize: 13, color: t.dim,  fontFamily: t.mono }}>{fmtVal(base, unit)}</span>
             <span style={{ fontSize: 11, color: t.dim }}>→</span>
-            <span style={{ fontSize: 12, color: t.text, fontFamily: t.mono, fontWeight: 700 }}>{fmtVal(newVal, unit)}</span>
-            <span style={{ fontSize: 11, fontFamily: t.mono, color: fmt?.color }}>{fmt?.text}</span>
+            <span style={{ fontSize: 13, color: t.text, fontFamily: t.mono, fontWeight: 700 }}>{fmtVal(newVal, unit)}</span>
+            <span style={{ fontSize: 12, fontFamily: t.mono, color: fmt?.color }}>{fmt?.text}</span>
           </>
         ) : (
-          <span style={{ fontSize: 12, color: t.mid, fontFamily: t.mono }}>{fmtVal(base, unit)}</span>
+          <span style={{ fontSize: 13, color: t.mid, fontFamily: t.mono }}>{fmtVal(base, unit)}</span>
         )}
       </div>
     </div>
@@ -452,43 +452,18 @@ export default function UpgradesTab({ build, car, onPartsChange, onPiChange }) {
             }}>
               Stat Changes
             </div>
-            {/* Radar + PI ratings side by side */}
-            <div style={{ display: 'flex', gap: 14, marginBottom: 16, alignItems: 'flex-start' }}>
-              <div style={{ flexShrink: 0 }}>
-                <StatRadar base={baseStats} current={newStats} size={170} />
-              </div>
-              {/* PI Ratings column */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {STAT_SECTIONS.filter(s => s.label.includes('PI')).map(sec => (
-                  <div key={sec.label}>
-                    <div style={{
-                      fontSize: 10, fontFamily: t.mono, color: t.accent,
-                      textTransform: 'uppercase', letterSpacing: '0.12em',
-                      marginBottom: 6, paddingBottom: 3,
-                      borderBottom: `1px solid ${t.border}`,
-                    }}>
-                      {sec.label}
-                    </div>
-                    {sec.stats.map(({ key, label, unit, lowerBetter }) => (
-                      <StatRow
-                        key={key} label={label}
-                        base={baseStats[key] ?? null}
-                        newVal={newStats[key] ?? baseStats[key] ?? null}
-                        unit={unit} lowerBetter={lowerBetter}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
+            {/* Radar centered */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+              <StatRadar base={baseStats} current={newStats} size={200} />
             </div>
 
-            {/* Other stat sections below */}
-            {STAT_SECTIONS.filter(s => !s.label.includes('PI')).map(sec => (
-              <div key={sec.label} style={{ marginBottom: 14 }}>
+            {/* All stat sections */}
+            {STAT_SECTIONS.map(sec => (
+              <div key={sec.label} style={{ marginBottom: 16 }}>
                 <div style={{
-                  fontSize: 10, fontFamily: t.mono, color: t.accent,
-                  textTransform: 'uppercase', letterSpacing: '0.12em',
-                  marginBottom: 4, paddingBottom: 3,
+                  fontSize: 11, fontFamily: t.mono, color: t.accent,
+                  textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700,
+                  marginBottom: 6, paddingBottom: 4,
                   borderBottom: `1px solid ${t.border}`,
                 }}>
                   {sec.label}

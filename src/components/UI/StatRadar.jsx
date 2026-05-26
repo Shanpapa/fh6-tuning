@@ -53,7 +53,7 @@ export default function StatRadar({ base, current, size = 200 }) {
   const currentPts = statsToPoints(current)
 
   // Label positions (slightly outside the ring)
-  const labelR = R + 18
+  const labelR = R + 22
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -133,7 +133,7 @@ export default function StatRadar({ base, current, size = 200 }) {
                 x={x} y={y - 5}
                 textAnchor={anchor}
                 fill={t.dim}
-                fontSize="8"
+                fontSize="10"
                 fontFamily="'Space Mono', monospace"
                 style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
               >
@@ -145,13 +145,13 @@ export default function StatRadar({ base, current, size = 200 }) {
                   x={x} y={y + 5}
                   textAnchor={anchor}
                   fill={t.accent}
-                  fontSize="9"
+                  fontSize="11"
                   fontWeight="700"
                   fontFamily="'Space Mono', monospace"
                 >
                   {curVal.toFixed(1)}
                   {delta !== null && delta !== 0 && (
-                    <tspan fill={deltaColor} fontSize="7">
+                    <tspan fill={deltaColor} fontSize="9">
                       {delta > 0 ? ` +${delta.toFixed(1)}` : ` ${delta.toFixed(1)}`}
                     </tspan>
                   )}
@@ -163,7 +163,7 @@ export default function StatRadar({ base, current, size = 200 }) {
                   x={x} y={y + 5}
                   textAnchor={anchor}
                   fill={t.mid}
-                  fontSize="9"
+                  fontSize="11"
                   fontWeight="700"
                   fontFamily="'Space Mono', monospace"
                 >
@@ -183,13 +183,13 @@ export default function StatRadar({ base, current, size = 200 }) {
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 20, height: 2, background: t.mid, borderRadius: 1 }} />
-            <span style={{ fontSize: 9, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <span style={{ fontSize: 11, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Before
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 20, height: 2, background: t.accent, borderRadius: 1 }} />
-            <span style={{ fontSize: 9, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <span style={{ fontSize: 11, fontFamily: t.mono, color: t.dim, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               After
             </span>
           </div>
