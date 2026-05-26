@@ -116,7 +116,8 @@ export default function TuneTab({ build, car, installedParts }) {
     // Don't overwrite gear_count — user may have set it manually
     const { gear_count, ...baselineWithoutGears } = baseline
     setTune(prev => ({ ...prev, ...baselineWithoutGears }))
-    setGenMsg(`Generated · ${activeCompound} · ${power_hp} hp · ${weight_kg} kg`)
+    const frontNote = rawFront ? '' : ' · front weight unknown (52% assumed)'
+    setGenMsg(`Generated · ${activeCompound} · ${power_hp} hp · ${weight_kg} kg${frontNote}`)
     setSaved(false)
     setTimeout(() => setGenMsg(''), 5000)
   }
