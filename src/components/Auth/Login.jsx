@@ -11,7 +11,19 @@ export default function Login() {
   const [name,    setName]    = useState('')
   const [err,     setErr]     = useState('')
   const [ok,      setOk]      = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading,   setLoading]   = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+
+  const sendReset = async () => {
+    if (!email) { setErr('Enter your email first'); return }
+    setLoading(true); setErr('')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://shanpapa.github.io/fh6-tuning/',
+    })
+    if (error) { setErr(error.message) }
+    else { setResetSent(true) }
+    setLoading(false)
+  }
 
   const submit = async () => {
     setErr(''); setOk('')
@@ -113,10 +125,30 @@ export default function Login() {
               {ok}
             </div>
           )}
+          {resetSent && (
+            <div style={{ color: t.green, fontSize: 12, fontFamily: t.mono, marginBottom: 12 }}>
+              ✓ Password reset email sent — check your inbox.
+            </div>
+          )}
 
           <Btn onClick={submit} disabled={loading} full>
             {loading ? '…' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </Btn>
+
+          {mode === 'login' && !resetSent && (
+            <button
+              onClick={sendReset}
+              disabled={loading}
+              style={{
+                background: 'none', border: 'none', color: t.dim,
+                fontFamily: t.mono, fontSize: 11, cursor: 'pointer',
+                marginTop: 10, width: '100%', textAlign: 'center',
+                textDecoration: 'underline',
+              }}
+            >
+              Forgot password?
+            </button>
+          )}
         </div>
       </div>
     </div>
