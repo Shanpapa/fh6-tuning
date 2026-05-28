@@ -8,6 +8,22 @@ import { useDescriptions } from '../../lib/useDescriptions.js'
 
 function round1(n) { return Math.round(n * 10) / 10 }
 
+// Extract gear count from installed transmission part name
+// e.g. "Race Transmission: 10 Speed" → 10
+function getGearCount(installedParts, carMaxGears) {
+  for (const p of (installedParts || [])) {
+    if (p.subcategory?.toLowerCase().includes('transmission') ||
+        p.category?.toLowerCase().includes('drivetrain')) {
+      const m = p.name?.match(/(\d+)\s*speed/i)
+      if (m) return parseInt(m[1])
+    }
+  }
+  // Fallback: car's max_gears from XAML (if >1, it's the dashboard display range)
+  // For EVs max_gears=1 is valid; for others treat as unknown
+  if (carMaxGears && carMaxGears >= 1 && carMaxGears <= 10) return carMaxGears
+  return 6  // safe default
+}
+
 function getActiveCompound(installedParts, carStockCompound) {
   // 1. Check installed tire parts first
   for (const p of (installedParts || [])) {
@@ -84,6 +100,11 @@ export default function TuneTab({ build, car, installedParts }) {
     [installedParts, car?.tyre_compound_stock]
   )
 
+  const detectedGearCount = useMemo(
+    () => getGearCount(installedParts, car?.max_gears),
+    [installedParts, car?.max_gears]
+  )
+
   const set = (key) => (val) => {
     setTune(prev => ({ ...prev, [key]: val }))
     setSaved(false)
@@ -119,9 +140,10 @@ export default function TuneTab({ build, car, installedParts }) {
       power_hp, goal: normaliseGoal(build.goal),
     })
 
-    // Don't overwrite gear_count — user may have set it manually
+    // Set gear_count from installed transmission or car spec
+    const detectedGears = getGearCount(installedParts, car?.max_gears)
     const { gear_count, ...baselineWithoutGears } = baseline
-    setTune(prev => ({ ...prev, ...baselineWithoutGears }))
+    setTune(prev => ({ ...prev, ...baselineWithoutGears, gear_count: detectedGears }))
     const frontNote = rawFront ? '' : ' · front weight unknown (52% assumed)'
     setGenMsg(`Generated · ${activeCompound} · ${power_hp} hp · ${weight_kg} kg${frontNote}`)
     setSaved(false)
