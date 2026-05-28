@@ -90,10 +90,23 @@ export default function TuneTab({ build, car, installedParts }) {
   const [saved,        setSaved]        = useState(false)
   const [genMsg,       setGenMsg]       = useState('')
   const [showTooltips, setShowTooltips] = useState(true)
+  const [suspType,     setSuspType]     = useState(() => {
+    // Auto-detect from installed spring part name
+    const sp = (installedParts || []).find(p => p.subcategory === 'Springs and Dampers')
+    if (!sp) return 'race'
+    const n = (sp.name || '').toLowerCase()
+    if (n.includes('drift'))  return 'drift'
+    if (n.includes('rally'))  return 'rally'
+    if (n.includes('sport'))  return 'sport'
+    if (n.includes('street')) return 'street'
+    if (n.includes('offroad') || n.includes('off-road')) return 'offroad'
+    return 'race'
+  })
   const descs = useDescriptions()
 
-  const isAWD    = car?.stock_drivetrain === 'AWD'
-  const gearCount = tune.gear_count || 6
+  const isAWD         = car?.stock_drivetrain === 'AWD'
+  const gearCount      = tune.gear_count || 6
+  const suspAdjustable = (SUSPENSION_TYPES[suspType] || SUSPENSION_TYPES.race).adjustable
 
   const activeCompound = useMemo(
     () => getActiveCompound(installedParts, car?.tyre_compound_stock),
@@ -173,6 +186,27 @@ export default function TuneTab({ build, car, installedParts }) {
             {activeCompound}
           </span>
           <span style={{ fontSize: 12, color: t.dim, fontFamily: t.mono }}> · {PSI[activeCompound]} bar</span>
+          {/* Suspension type selector */}
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: t.dim, fontFamily: t.mono }}>Suspension:</span>
+            <select
+              value={suspType}
+              onChange={e => setSuspType(e.target.value)}
+              style={{
+                background: t.surf3, border: `1px solid ${t.border}`, color: suspAdjustable ? t.text : t.yellow,
+                borderRadius: 4, padding: '3px 8px', fontSize: 11, fontFamily: t.mono, cursor: 'pointer',
+              }}
+            >
+              {Object.entries(SUSPENSION_TYPES).map(([k, v]) => (
+                <option key={k} value={k}>{v.label}{v.adjustable ? '' : ' (locked)'}</option>
+              ))}
+            </select>
+            {!suspAdjustable && (
+              <span style={{ fontSize: 11, color: t.yellow, fontFamily: t.mono }}>
+                ⚠ Springs/dampers not adjustable with this suspension
+              </span>
+            )}
+          </div>
           {genMsg && (
             <div style={{ fontSize: 11, color: t.green, fontFamily: t.mono, marginTop: 3 }}>✓ {genMsg}</div>
           )}
@@ -224,14 +258,26 @@ export default function TuneTab({ build, car, installedParts }) {
       </TuneSection>
 
       {/* ── Springs & Dampers ── */}
-      <TuneSection title="Springs & Dampers" descKey="tune_springs" descs={descs} showTooltips={showTooltips}>
-        <TuneSlider label="Spring Rate Front" value={tune.spring_rate_f} onChange={set('spring_rate_f')} min={1} max={999} step={1} unit=" N/mm" highlight />
-        <TuneSlider label="Spring Rate Rear"  value={tune.spring_rate_r} onChange={set('spring_rate_r')} min={1} max={999} step={1} unit=" N/mm" highlight />
-        <TuneSlider label="Bump Front"        value={tune.bump_f}        onChange={set('bump_f')}        min={1} max={20}  step={0.1} />
-        <TuneSlider label="Bump Rear"         value={tune.bump_r}        onChange={set('bump_r')}        min={1} max={20}  step={0.1} />
-        <TuneSlider label="Rebound Front"     value={tune.rebound_f}     onChange={set('rebound_f')}     min={1} max={20}  step={0.1} highlight />
-        <TuneSlider label="Rebound Rear"      value={tune.rebound_r}     onChange={set('rebound_r')}     min={1} max={20}  step={0.1} highlight />
-      </TuneSection>
+      {!suspAdjustable ? (
+        <div style={{
+          background: t.surf2, border: `1px solid ${t.border}33`,
+          borderRadius: 6, padding: '14px 16px', marginBottom: 12,
+          fontSize: 12, fontFamily: t.mono, color: t.dim, textAlign: 'center',
+        }}>
+          🔒 Springs & Dampers — not adjustable with <strong style={{ color: t.yellow }}>
+            {SUSPENSION_TYPES[suspType]?.label}
+          </strong> suspension. Install Race, Rally, or Drift springs to unlock.
+        </div>
+      ) : (
+        <TuneSection title="Springs & Dampers" descKey="tune_springs" descs={descs} showTooltips={showTooltips}>
+          <TuneSlider label="Spring Rate Front" value={tune.spring_rate_f} onChange={set('spring_rate_f')} min={454} max={2271} step={0.1} unit=" N/mm" highlight />
+          <TuneSlider label="Spring Rate Rear"  value={tune.spring_rate_r} onChange={set('spring_rate_r')} min={454} max={2271} step={0.1} unit=" N/mm" highlight />
+          <TuneSlider label="Bump Front"        value={tune.bump_f}        onChange={set('bump_f')}        min={1} max={20}   step={0.1} />
+          <TuneSlider label="Bump Rear"         value={tune.bump_r}        onChange={set('bump_r')}        min={1} max={20}   step={0.1} />
+          <TuneSlider label="Rebound Front"     value={tune.rebound_f}     onChange={set('rebound_f')}     min={1} max={20}   step={0.1} highlight />
+          <TuneSlider label="Rebound Rear"      value={tune.rebound_r}     onChange={set('rebound_r')}     min={1} max={20}   step={0.1} highlight />
+        </TuneSection>
+      )}
 
       {/* ── ARB ── */}
       <TuneSection title="Anti-Roll Bars" descKey="tune_arb" descs={descs} showTooltips={showTooltips}>

@@ -1,7 +1,7 @@
 // ── FH6 TUNING FORMULAS ───────────────────────────────────
 // Spring/damper/ARB/caster formulas adapted from co-driver (MIT)
 // github.com/Ojansen/co-driver — with FH6-specific adjustments
-import { PSI, TARGET_HZ, DIFF_DEFAULTS, DEFAULT_CASTER } from './constants.js'
+import { PSI, TARGET_HZ, DIFF_DEFAULTS, DEFAULT_CASTER, SPRING_RANGE } from './constants.js'
 
 const UNSPRUNG_RATIO   = 0.13  // fraction of total mass (wheels, brakes, arms)
 const FREQ_REAR_OFFSET = 0.2   // rear Hz higher than front for flat-ride tuning
@@ -44,18 +44,23 @@ export function calcRebound(bump) {
   return Math.round((bump * 1.5) * 10) / 10
 }
 
-// Spring rate — natural frequency method (N/mm)
-// Uses co-driver's cleaner formula (no PI scalar)
+// Spring rate — natural frequency method
+// FH6 NOTE: the game's spring slider is labelled N/mm but stores N/cm (×10 off).
+// This is a known Forza engine bug since FM4/FH3 (confirmed by FATTY v2.1, 2026).
+// Formula gives true-physics N/mm; we multiply by 10 to match game display.
+// Game slider range: 454.3 – 2271.7 N/mm (Race suspension)
 export function calcSpringRates({ compound, weight_kg, front_pct }) {
-  const f = TARGET_HZ[compound] ?? 1.9
+  const f = TARGET_HZ[compound] ?? 2.42
   const sprung_total = weight_kg * (1 - UNSPRUNG_RATIO)
   const sprung_f = sprung_total * front_pct / 2
   const sprung_r = sprung_total * (1 - front_pct) / 2
-  const k_front = (Math.pow(2 * Math.PI * f, 2) * sprung_f) / 1000
-  const k_rear  = (Math.pow(2 * Math.PI * (f + FREQ_REAR_OFFSET), 2) * sprung_r) / 1000
+  // True physics N/mm × 10 = game N/mm
+  const k_front_true = (Math.pow(2 * Math.PI * f, 2) * sprung_f) / 1000
+  const k_rear_true  = (Math.pow(2 * Math.PI * (f + FREQ_REAR_OFFSET), 2) * sprung_r) / 1000
+  const clamp = (v) => Math.round(Math.max(SPRING_RANGE.min, Math.min(SPRING_RANGE.max, v * 10)) * 10) / 10
   return {
-    front: Math.round(k_front * 10) / 10,
-    rear:  Math.round(k_rear  * 10) / 10,
+    front: clamp(k_front_true),
+    rear:  clamp(k_rear_true),
   }
 }
 

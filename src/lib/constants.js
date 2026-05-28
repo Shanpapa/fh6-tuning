@@ -63,13 +63,31 @@ export const PSI = {
 export const COMPOUNDS = Object.keys(PSI)
 
 // Target natural frequency by compound (Hz)
+// Source: co-driver (MIT) — calibrated for FH6 game slider ranges
+// FH6 spring sliders use N/mm × 10 internally (N/cm labelled as N/mm, Forza bug since 2015)
+// Our formula outputs true-physics N/mm; tuning.js multiplies by 10 before displaying.
 export const TARGET_HZ = {
-  off_road:   1.3,
-  rally:      1.4,
-  street:     1.65,
-  sport:      1.9,
-  semi_slick: 2.2,
-  race_slick: 2.5,
+  off_road:   1.69,   // co-driver crosscountry baseline
+  rally:      1.94,   // co-driver dirt baseline
+  street:     2.10,   // softer road (locked in-game anyway)
+  sport:      2.42,   // co-driver road/sport — game range: 454–2271 N/mm
+  drift:      2.20,   // drift springs — semi-slick-ish feel
+  semi_slick: 2.70,
+  race_slick: 3.00,
+}
+
+// FH6 spring slider ranges (game N/mm = true N/mm × 10)
+export const SPRING_RANGE = { min: 454.3, max: 2271.7 }
+
+// Suspension types: determines if spring/damper sliders are adjustable
+export const SUSPENSION_TYPES = {
+  stock:   { label: 'Stock',   adjustable: false },
+  street:  { label: 'Street',  adjustable: false },
+  sport:   { label: 'Sport',   adjustable: false },
+  race:    { label: 'Race',    adjustable: true  },
+  drift:   { label: 'Drift',   adjustable: true  },
+  rally:   { label: 'Rally',   adjustable: true  },
+  offroad: { label: 'Off-Road',adjustable: true  },
 }
 
 // Mechanical balance target range
