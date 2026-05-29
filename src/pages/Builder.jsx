@@ -1,16 +1,104 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, RefreshCw } from 'lucide-react'
 import { useBuilder } from '../hooks/useBuilder'
+import { useTuning } from '../hooks/useTuning'
 import { GOALS, GOAL_COLORS } from '../constants/goals'
 import { Button, Card, Badge } from '../components/ui'
 
 const PI_CLASSES = ['D', 'C', 'B', 'A', 'S1', 'S2', 'X']
 
+// ── Tuning Calculator display ─────────────────────────────
+
+function TuneValue({ label, value, unit = '' }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-dim text-xs uppercase tracking-wider">{label}</span>
+      <span className="font-mono text-text font-semibold text-sm">
+        {value != null ? `${value}${unit}` : '—'}
+      </span>
+    </div>
+  )
+}
+
+function TuneSection({ title, children }) {
+  return (
+    <div>
+      <p className="text-dim text-xs uppercase tracking-widest mb-2">{title}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-surf2 rounded-lg p-3">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function TuningCalculator({ tune, calculating, onRecalculate }) {
+  if (calculating) {
+    return (
+      <div className="flex items-center justify-center py-8 text-dim text-sm">
+        Calculating…
+      </div>
+    )
+  }
+
+  if (!tune) {
+    return (
+      <div className="flex items-center justify-center py-8 text-dim text-sm">
+        No tuning data yet.
+      </div>
+    )
+  }
+
+  const { springs, dampers, arb, alignment, finalDrive } = tune
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <p className="text-dim text-xs">Calculated from car data · not editable</p>
+        <Button size="sm" variant="secondary" onClick={onRecalculate}>
+          <RefreshCw size={13} /> Recalculate
+        </Button>
+      </div>
+
+      <TuneSection title="Springs (kgf/mm)">
+        <TuneValue label="Front"         value={springs.front} />
+        <TuneValue label="Rear"          value={springs.rear} />
+      </TuneSection>
+
+      <TuneSection title="Dampers">
+        <TuneValue label="Front Bump"    value={dampers.front.bump} />
+        <TuneValue label="Front Rebound" value={dampers.front.rebound} />
+        <TuneValue label="Rear Bump"     value={dampers.rear.bump} />
+        <TuneValue label="Rear Rebound"  value={dampers.rear.rebound} />
+      </TuneSection>
+
+      <TuneSection title="Anti-Roll Bars">
+        <TuneValue label="Front ARB"     value={arb.front} />
+        <TuneValue label="Rear ARB"      value={arb.rear} />
+      </TuneSection>
+
+      <TuneSection title="Alignment">
+        <TuneValue label="Front Camber"  value={alignment.camber.front} unit="°" />
+        <TuneValue label="Rear Camber"   value={alignment.camber.rear}  unit="°" />
+        <TuneValue label="Front Toe"     value={alignment.toe.front}    unit="°" />
+        <TuneValue label="Rear Toe"      value={alignment.toe.rear}     unit="°" />
+        <TuneValue label="Caster"        value={alignment.caster}       unit="°" />
+      </TuneSection>
+
+      <TuneSection title="Gearing">
+        <TuneValue label="Final Drive"   value={finalDrive} />
+      </TuneSection>
+    </div>
+  )
+}
+
+// ── Builder page ──────────────────────────────────────────
+
 export default function Builder() {
   const { id: buildId } = useParams()
   const navigate = useNavigate()
   const { build, loading, saving, updateField } = useBuilder(buildId)
+  const { tune, calculating, recalculate } = useTuning(build?.user_car?.car, build?.goal)
 
   const [name, setName] = useState('')
   const [notes, setNotes] = useState('')
@@ -159,11 +247,13 @@ export default function Builder() {
           )}
         </Card>
 
-        <Card className="p-5 lg:col-span-2 border-dashed">
-          <h2 className="font-barlow text-lg font-bold text-mid mb-1">Tuning Calculator</h2>
-          <p className="text-dim text-sm">
-            Coming in Session D — spring rates, dampers, alignment, ARB, final drive.
-          </p>
+        <Card className="p-5 lg:col-span-2">
+          <h2 className="font-barlow text-lg font-bold text-text mb-4">Tuning Calculator</h2>
+          <TuningCalculator
+            tune={tune}
+            calculating={calculating}
+            onRecalculate={recalculate}
+          />
         </Card>
       </div>
     </div>
