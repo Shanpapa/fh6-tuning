@@ -39,9 +39,12 @@ export function useGarage() {
       userCarId = newUC.id
     }
 
+    const insertPayload = { user_car_id: userCarId, goal }
+    if (name) insertPayload.name = name   // omit → DB default 'Build 1' applies
+
     const { error } = await supabase
       .from('builds')
-      .insert({ user_car_id: userCarId, goal, name: name || null })
+      .insert(insertPayload)
     if (!error) await fetchBuilds()
     return { error }
   }
