@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, Pencil, Check, X } from 'lucide-react'
 import { useCarDetail } from '../hooks/useCarDetail'
 import { GOALS, GOAL_COLORS } from '../constants/goals'
-import { Button, Card, Badge } from '../components/ui'
+import { Button, Card, Badge, ClassBadge, DrivetrainBadge } from '../components/ui'
 
 const STAT_LABELS = {
   stat_speed:        'Speed',
@@ -57,11 +57,14 @@ export default function CarDetail() {
           </h1>
           <span className="font-barlow text-2xl text-dim">{car.year}</span>
         </div>
-        <div className="flex items-center gap-3 mt-2 flex-wrap">
-          <Badge color="accent">{car.stock_class}</Badge>
-          <span className="text-mid text-sm">{car.stock_pi} PI</span>
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <ClassBadge cls={car.stock_class} />
+          <span className="text-mid text-sm">{car.stock_pi}</span>
           {car.stock_drivetrain && (
-            <span className="text-dim text-sm">{car.stock_drivetrain}</span>
+            <>
+              <span className="text-border text-sm">·</span>
+              <DrivetrainBadge drivetrain={car.stock_drivetrain} />
+            </>
           )}
         </div>
       </div>

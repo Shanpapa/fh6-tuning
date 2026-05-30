@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus, Car, Trash2, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useGarage } from '../hooks/useGarage'
-import { Button, Card, Badge } from '../components/ui/index.js'
+import { Button, Card, Badge, ClassBadge, DrivetrainBadge } from '../components/ui/index.js'
 import { GOALS, GOAL_COLORS } from '../constants/goals'
 import AddCarModal from '../components/garage/AddCarModal'
 
@@ -89,7 +89,18 @@ function BuildCard({ build, onDelete }) {
           <p className="font-barlow text-xl font-bold text-text leading-tight truncate">
             {car?.make} {car?.model}
           </p>
-          <p className="text-dim text-sm">{car?.year} · {car?.stock_class} · {car?.stock_pi} PI</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-dim text-sm">{car?.year}</span>
+            <span className="text-border text-sm">·</span>
+            <ClassBadge cls={car?.stock_class} />
+            <span className="text-dim text-sm">{car?.stock_pi}</span>
+            {car?.stock_drivetrain && (
+              <>
+                <span className="text-border text-sm">·</span>
+                <DrivetrainBadge drivetrain={car?.stock_drivetrain} />
+              </>
+            )}
+          </div>
         </div>
         <Badge color={goalColor} className="flex-shrink-0 mt-0.5">
           {goalMeta?.label ?? build.goal}

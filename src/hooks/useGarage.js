@@ -12,7 +12,7 @@ export function useGarage() {
     setLoading(true)
     const { data } = await supabase
       .from('builds')
-      .select('id, name, goal, created_at, user_car:user_cars(id, car_id, nickname, car:cars(id, make, model, year, stock_class, stock_pi))')
+      .select('id, name, goal, created_at, user_car:user_cars(id, car_id, nickname, car:cars(id, make, model, year, stock_class, stock_pi, stock_drivetrain))')
       .order('created_at', { ascending: false })
     setBuilds(data ?? [])
     setLoading(false)

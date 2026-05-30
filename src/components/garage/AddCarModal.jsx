@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Search, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { GOALS, GOAL_COLORS } from '../../constants/goals'
-import { Modal, Button, Badge } from '../ui/index.js'
+import { Modal, Button, ClassBadge, DrivetrainBadge } from '../ui/index.js'
 
 export default function AddCarModal({ open, onClose, onAdd }) {
   const [query, setQuery] = useState('')
@@ -76,12 +76,15 @@ export default function AddCarModal({ open, onClose, onAdd }) {
                   selectedCar?.id === car.id ? 'bg-accent/10' : 'hover:bg-surf2'
                 }`}
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex items-center gap-2 flex-wrap">
                   <span className="text-text text-sm font-semibold">
                     {car.year} {car.make} {car.model}
                   </span>
-                  <span className="text-dim text-xs ml-2">
-                    {car.stock_class} · {car.stock_pi} PI · {car.stock_drivetrain}
+                  <span className="flex items-center gap-1">
+                    <ClassBadge cls={car.stock_class} />
+                    <span className="text-dim text-xs">{car.stock_pi}</span>
+                    <span className="text-border text-xs">·</span>
+                    <DrivetrainBadge drivetrain={car.stock_drivetrain} />
                   </span>
                 </div>
                 {selectedCar?.id === car.id && (
@@ -103,7 +106,16 @@ export default function AddCarModal({ open, onClose, onAdd }) {
             <p className="text-text text-sm font-semibold">
               {selectedCar.year} {selectedCar.make} {selectedCar.model}
             </p>
-            <p className="text-dim text-xs">{selectedCar.stock_class} · {selectedCar.stock_pi} PI</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <ClassBadge cls={selectedCar.stock_class} />
+              <span className="text-dim text-xs">{selectedCar.stock_pi}</span>
+              {selectedCar.stock_drivetrain && (
+                <>
+                  <span className="text-border text-xs">·</span>
+                  <DrivetrainBadge drivetrain={selectedCar.stock_drivetrain} />
+                </>
+              )}
+            </div>
           </div>
           <button
             onClick={() => { setSelectedCar(null); setCars([]) }}
