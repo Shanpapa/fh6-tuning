@@ -8,7 +8,8 @@ export function useTuning(car, goal) {
   const recalculate = useCallback(() => {
     if (!car || !goal) return
     setCalculating(true)
-    const result = calculateTune(car, goal)
+    const compound = car?.tyre_compound_stock || 'Standard'
+    const result = calculateTune(car, compound, goal)
     setTune(result)
     setCalculating(false)
   }, [car, goal])

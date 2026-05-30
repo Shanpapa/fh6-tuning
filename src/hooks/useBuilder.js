@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 
-const CAR_FIELDS = 'id, make, model, year, stock_class, stock_pi, stock_drivetrain, front_weight_pct, suspension_type, max_rpm, base_stats'
+const CAR_FIELDS = 'id, make, model, year, stock_class, stock_pi, stock_drivetrain, front_weight_pct, suspension_type, max_rpm, base_stats, tyre_compound_stock'
 
 export function useBuilder(buildId) {
   const { user } = useAuth()

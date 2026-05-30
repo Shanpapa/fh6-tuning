@@ -49,7 +49,8 @@ function TuningCalculator({ tune, calculating, onRecalculate }) {
     )
   }
 
-  const { springs, dampers, arb, alignment, finalDrive } = tune
+  const { springs, dampers, arb, alignment, finalDrive, diff, tirePressure, aero } = tune
+  const isAWD = !!diff?.center
 
   return (
     <div className="flex flex-col gap-4">
@@ -60,7 +61,7 @@ function TuningCalculator({ tune, calculating, onRecalculate }) {
         </Button>
       </div>
 
-      <TuneSection title="Springs (kgf/mm)">
+      <TuneSection title="Springs (N/mm)">
         <TuneValue label="Front"         value={springs.front} />
         <TuneValue label="Rear"          value={springs.rear} />
       </TuneSection>
@@ -87,6 +88,32 @@ function TuningCalculator({ tune, calculating, onRecalculate }) {
 
       <TuneSection title="Gearing">
         <TuneValue label="Final Drive"   value={finalDrive} />
+      </TuneSection>
+
+      <TuneSection title="Differential">
+        {isAWD ? (
+          <>
+            <TuneValue label="Front Accel" value={diff?.front?.accel}    unit="%" />
+            <TuneValue label="Front Decel" value={diff?.front?.decel}    unit="%" />
+            <TuneValue label="Rear Accel"  value={diff?.rear?.accel}     unit="%" />
+            <TuneValue label="Rear Decel"  value={diff?.rear?.decel}     unit="%" />
+            <TuneValue label="Center Rear" value={diff?.center?.rear_pct} unit="%" />
+          </>
+        ) : (
+          <>
+            <TuneValue label="Accel"       value={diff?.accel} unit="%" />
+            <TuneValue label="Decel"       value={diff?.decel} unit="%" />
+          </>
+        )}
+      </TuneSection>
+
+      <TuneSection title="Tire Pressure (bar)">
+        <TuneValue label="Front"         value={tirePressure?.front} unit=" bar" />
+        <TuneValue label="Rear"          value={tirePressure?.rear}  unit=" bar" />
+      </TuneSection>
+
+      <TuneSection title="Aero Balance">
+        <TuneValue label="Front Bias"    value={aero} />
       </TuneSection>
     </div>
   )
