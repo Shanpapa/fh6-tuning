@@ -1,37 +1,45 @@
-// Spring stiffness divisor per suspension type (higher = softer)
-const SUSPENSION_DIVISOR = {
-  'Stock':    14,
-  'Street':   12,
-  'Sport':    10,
-  'Race':      7,
-  'Drift':    11,
-  'Rally':    16,
-  'Off-Road': 18,
+// Physics-based spring rates (N/mm, FH6 in-game range).
+// Source: co-driver MIT quarter-car formula + FH6 in-game validation.
+//
+// Target ride frequencies per tyre compound. `compound` is tyre_compound_stock
+// (e.g. 'Standard', 'Sport', 'Race Slick'); 'Standard' is the fallback bucket.
+const TARGET_HZ = {
+  'Stock':      1.65,
+  'Street':     1.65,
+  'Standard':   1.65,   // tyre_compound_stock fallback
+  'Sport':      2.42,
+  'Semi-Slick': 2.42,
+  'Drift':      2.42,
+  'Race Slick': 2.5,
+  'Rally':      1.4,
+  'Off-Road':   1.3,
 }
 
-// Per-goal front/rear bias multipliers
-const GOAL_ADJ = {
-  cornering: { f: 1.05, r: 1.00 },
-  balanced:  { f: 1.00, r: 1.00 },
-  speed:     { f: 0.95, r: 1.05 },
-  circuit:   { f: 1.10, r: 1.00 },
-  touge:     { f: 1.05, r: 1.00 },
-  rally:     { f: 0.90, r: 0.85 },
-  offroad:   { f: 0.85, r: 0.80 },
-  drift:     { f: 1.10, r: 0.65 },
-  drag:      { f: 0.80, r: 1.20 },
-}
+const SPRING_RANGE = { min: 454, max: 2271 }
 
-// Returns { front, rear } in kgf/mm
-export function calcSpringRates(weight_kg, front_pct, suspension_type, goal) {
-  const w   = weight_kg  ?? 1200
-  const fp  = (front_pct ?? 52) / 100
-  const rp  = 1 - fp
-  const div = SUSPENSION_DIVISOR[suspension_type] ?? 14
-  const adj = GOAL_ADJ[goal] ?? GOAL_ADJ.balanced
+// Empirical scale from the physics quarter-car stiffness to FH6's in-game spring
+// units. The co-driver note nominally used "x10", but combined with PI_scalar
+// (~27.7) that over-scales ~12.6x and pins every car to the 2271 ceiling.
+// Calibrated instead to the validated in-game Silvia datapoint
+// (Standard compound, PI 455 -> front ~618 / rear ~530 N/mm).  D/2b
+const GAME_SCALE = 0.794
 
-  const front = Math.round(w * fp / div * adj.f * 10) / 10
-  const rear  = Math.round(w * rp / div * adj.r * 10) / 10
+// compound = tyre_compound_stock (pl. 'Standard', 'Sport', 'Race Slick')
+export function calcSpringRates(car, compound) {
+  const weight_kg = car.base_stats?.weight_kg || 1200
+  const front_pct = parseFloat(car.front_weight_pct || 52) / 100
+  const PI        = car.stock_pi || 500
 
-  return { front, rear }
+  const sprung       = weight_kg * 0.85
+  const front_corner = (sprung * front_pct) / 2
+  const rear_corner  = (sprung * (1 - front_pct)) / 2
+  const PI_scalar    = 20 + (PI / 1000) * 17
+  const hz           = TARGET_HZ[compound] || 1.65
+
+  const calc = (corner) => {
+    const K_true = (corner * Math.pow(2 * Math.PI * hz, 2) * PI_scalar) / 1000
+    return Math.round(Math.max(SPRING_RANGE.min, Math.min(SPRING_RANGE.max, K_true * GAME_SCALE)))
+  }
+
+  return { front: calc(front_corner), rear: calc(rear_corner) }
 }
