@@ -67,10 +67,10 @@ function TuningCalculator({ tune, calculating, onRecalculate }) {
       </TuneSection>
 
       <TuneSection title="Dampers">
-        <TuneValue label="Front Bump"    value={dampers.front.bump} />
-        <TuneValue label="Front Rebound" value={dampers.front.rebound} />
-        <TuneValue label="Rear Bump"     value={dampers.rear.bump} />
-        <TuneValue label="Rear Rebound"  value={dampers.rear.rebound} />
+        <TuneValue label="Front Bump"    value={dampers.bump.front} />
+        <TuneValue label="Front Rebound" value={dampers.rebound.front} />
+        <TuneValue label="Rear Bump"     value={dampers.bump.rear} />
+        <TuneValue label="Rear Rebound"  value={dampers.rebound.rear} />
       </TuneSection>
 
       <TuneSection title="Anti-Roll Bars">
